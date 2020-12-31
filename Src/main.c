@@ -20,11 +20,18 @@ volatile unsigned int millis;
 int main(void) {
 	/* Configure the system clock */
 	clock_setup();
-	BT_enable();
+	//BT_enable();
+
+	RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
+	GPIOB->MODER &= ~(0b10 << GPIO_MODER_MODE7_Pos | 0b10 << GPIO_MODER_MODE6_Pos); // gpio
+
 
 	while(1) {
-		_delay_ms(1000);
-		BT_prints("Hello there!");
+		_delay_ms(100);
+		GPIOB->ODR |= (GPIO_ODR_OD7 | GPIO_ODR_OD6);
+		_delay_ms(100);
+		GPIOB->ODR &= ~(GPIO_ODR_OD7 | GPIO_ODR_OD6);
+		//BT_prints("Hello there!");
 	}
 
 	//spiffs * fileSystem = fs_init();
@@ -75,6 +82,7 @@ inline void clock_setup() {
 	 //SystemCoreClockUpdate();
 
 	 SysTick_Config(1000);
+	 //NVIC_EnableIRQ(SysTick_IRQn);
 }
 
 void SysTick_Handler(void) {

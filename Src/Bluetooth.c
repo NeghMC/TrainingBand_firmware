@@ -13,12 +13,12 @@ void BT_enable() {
 	// clock enable for peripheral
 	RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
 	// mode
-	GPIOA->MODER &= ~(0b10 << GPIO_MODER_MODE3_Pos);
+	GPIOB->MODER &= ~(0b10 << GPIO_MODER_MODE3_Pos);
 }
 
 void BT_disable() {
 	// Select Analog mode (00- default) on GPIOA pin 3
-	GPIOA->MODER &= ~(GPIO_MODER_MODE3);
+	GPIOB->MODER &= ~(GPIO_MODER_MODE3);
 
 	/* (3) Select Alternate function mode (10) on GPIOA pin 0 */
 	//GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE0)) | (GPIO_MODER_MODE0_1); /* (3) */
