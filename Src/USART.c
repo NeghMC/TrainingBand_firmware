@@ -23,7 +23,7 @@ void UART_init() {
 	//GPIOB->AFR[0] |=
 
 
-	USART2->BRR = 0x0117; //baud 115200
+	USART2->BRR = 104; //baud 9600
 
 	//NVIC_EnableIRQ(USART2_IRQn);
 

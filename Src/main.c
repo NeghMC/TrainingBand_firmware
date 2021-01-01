@@ -20,19 +20,11 @@ volatile unsigned int millis;
 int main(void) {
 	/* Configure the system clock */
 	clock_setup();
-	//BT_enable();
+	UART_init();
 
-	RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
-	GPIOB->MODER &= ~(0b10 << GPIO_MODER_MODE7_Pos | 0b10 << GPIO_MODER_MODE6_Pos); // gpio
+	USART_prints("Hello!");
 
-
-	while(1) {
-		_delay_ms(100);
-		GPIOB->ODR |= (GPIO_ODR_OD7 | GPIO_ODR_OD6);
-		_delay_ms(100);
-		GPIOB->ODR &= ~(GPIO_ODR_OD7 | GPIO_ODR_OD6);
-		//BT_prints("Hello there!");
-	}
+	while(1) {}
 
 	//spiffs * fileSystem = fs_init();
 	//(void)fileSystem;
