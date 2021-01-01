@@ -22,12 +22,12 @@ void UART_init() {
 	GPIOB->MODER &= ~(0b01 << GPIO_MODER_MODE7_Pos | 0b01 << GPIO_MODER_MODE6_Pos);
 	//GPIOB->AFR[0] |=
 
-
-	USART2->BRR = 104; //baud 9600
+	const uint32_t USARTDIV = 2000000/38400; //baud 38400
+	USART2->BRR = (USARTDIV & 0xfff0) | ((USARTDIV & 0xf) >> 1);
 
 	//NVIC_EnableIRQ(USART2_IRQn);
 
-	USART2->CR1 |= /*USART_CR1_RE |*/ USART_CR1_TE | USART_CR1_UE;
+	USART2->CR1 |= USART_CR1_OVER8 | /*USART_CR1_RE |*/ USART_CR1_TE | USART_CR1_UE;
 }
 
 void USART2_IRQHandler(void) {
