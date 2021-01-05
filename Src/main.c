@@ -12,27 +12,33 @@
 
 void clock_setup();
 void Error_Handler(void);
-void _delay_ms(unsigned int t);
 
-// Milliseconds elapsed from uC start
-volatile unsigned int millis;
+// example task
+void exampleBlink(void * p) {
+
+	RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
+	GPIOA->MODER &= ~(GPIO_MODER_MODE15_1); // output
+
+	for(;;) {
+		vTaskDelay(500);
+		GPIOA->ODR ^= GPIO_ODR_OD15;
+	}
+}
+StackType_t exampleBlinkStack[80];
+StaticTask_t exampleTask;
 
 int main(void) {
 	/* Configure the system clock */
 	clock_setup();
-	UART_init();
-
-	USART_prints("Hello!");
-
-	while(1) {}
 
 	//spiffs * fileSystem = fs_init();
 	//(void)fileSystem;
 
 
-	//xTaskCreateStatic(usartFunction,"USART", USART_STACK_SIZE, NULL, tskIDLE_PRIORITY, usartStack, &usartTask);
+	xTaskCreateStatic(exampleBlink,"BL", 80, NULL, tskIDLE_PRIORITY+1, exampleBlinkStack, &exampleTask);
 	//xSemaphoreCreateBinaryStatic(&semaphore);
-	//vTaskStartScheduler();
+
+	vTaskStartScheduler();
 }
 
 inline void clock_setup() {
@@ -73,16 +79,7 @@ inline void clock_setup() {
 
 	 //SystemCoreClockUpdate();
 
-	 SysTick_Config(1000);
+	 //SysTick_Config(1000);
 	 //NVIC_EnableIRQ(SysTick_IRQn);
-}
-
-void SysTick_Handler(void) {
-	millis++;
-}
-
-void _delay_ms(unsigned int t) {
-	unsigned int temp = millis;
-	while(millis - temp <= t);
 }
 
