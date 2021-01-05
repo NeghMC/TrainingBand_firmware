@@ -5,6 +5,7 @@
 #include <stm32l031xx.h>
 
 #include <Bluetooth.h>
+#include <GPS.h>
 #include <FileSystem.h>
 
 // STM32L031K6T6
@@ -20,10 +21,10 @@ volatile unsigned int millis;
 int main(void) {
 	/* Configure the system clock */
 	clock_setup();
-	UART_init();
+	//LPUART_init();
 
-	USART_prints("Hello!");
-
+	//LPUART_prints("ala ma kota");
+	GPS_enable();
 	while(1) {}
 
 	//spiffs * fileSystem = fs_init();
