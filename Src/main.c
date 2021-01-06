@@ -31,13 +31,7 @@ int main(void) {
 	/* Configure the system clock */
 	clock_setup();
 
-	//spiffs * fileSystem = fs_init();
-	//(void)fileSystem;
-
-
 	xTaskCreateStatic(exampleBlink,"BL", 80, NULL, tskIDLE_PRIORITY+1, exampleBlinkStack, &exampleTask);
-	//xSemaphoreCreateBinaryStatic(&semaphore);
-
 	vTaskStartScheduler();
 }
 
@@ -61,25 +55,10 @@ inline void clock_setup() {
 
 
 	 //configure RCC and PLL settings while PLL is off
-	 //RCC->CFGR |= RCC_CFGR_PLLSRC;   //pll source external
-	 //RCC->CFGR |= RCC_CFGR_PLLMUL4;  //pll miultiplier
-	 //RCC->CFGR |= RCC_CFGR_PLLDIV2;
 	 RCC->CFGR |= RCC_CFGR_HPRE_DIV4;  //AHB prescaler
-	 //RCC->CFGR |= RCC_CFGR_PPRE1_DIV1;  //APB1 presacaler
-	 //RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;  //APB2 prescaler
-
-
-	 //turn on PLL
-	 //RCC->CR |= RCC_CR_PLLON;
-	 //while (!(RCC->CR & RCC_CR_PLLRDY)) ;
 
 	 //set clock source
 	 RCC->CFGR |= RCC_CFGR_SW_HSI;
 	 while (!(RCC->CFGR & RCC_CFGR_SWS_PLL)) ;
-
-	 //SystemCoreClockUpdate();
-
-	 //SysTick_Config(1000);
-	 //NVIC_EnableIRQ(SysTick_IRQn);
 }
 
