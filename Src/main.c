@@ -12,14 +12,15 @@
 // STM32L031K6T6
 // https://www.st.com/en/microcontrollers-microprocessors/stm32l031k6.html#documentation
 
+volatile uint8_t buf[256] = {0};
+
 void testTask(void * p) {
 	I2C_init();
 	peryph_en();
 
-	I2C_testWrite();
-
 	for(;;) {
-
+		I2C_ReceiveRegister(buf, 255, 0x57, 0, NULL);
+		vTaskDelay(500);
 	}
 }
 StackType_t testTaskStack[120];
