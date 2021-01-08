@@ -33,10 +33,10 @@ void I2C_init(void) {
 	// dma
 	RCC->AHBENR |= RCC_AHBENR_DMA1EN;
 	DMA1_CSELR->CSELR |= (0b0110 << DMA_CSELR_C2S_Pos); // channel 2, i2c_tx
-	DMA1_Channel3->CPAR = (uint32_t)&I2C1->TXDR;
+	DMA1_Channel2->CPAR = (uint32_t)&I2C1->TXDR;
 	//DMA1_Channel3->CMAR = (uint32_t)buffer;
 	//DMA1_Channel3->CNDTR = BUFFER_SIZE;
-	DMA1_Channel3->CCR |= DMA_CCR_MINC;
+	DMA1_Channel2->CCR |= DMA_CCR_MINC | DMA_CCR_DIR;
 
 
 	RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
@@ -79,11 +79,14 @@ void I2C1_IRQHandler(void) {
 	}
 }
 
-void I2C_Transmitt(uint8_t * buffer, uint16_t length, uint8_t address, void (*callback)(void)) {
-	DMA1_Channel3->CCR &= ~DMA_CCR_EN;
-	DMA1_Channel3->CMAR = (uint32_t)buffer;
-	DMA1_Channel3->CNDTR = length;
-	DMA1_Channel3->CCR |= DMA_CCR_EN;
+int I2C_Transmit(uint8_t * buffer, uint16_t length, uint8_t address, void (*callback)(void)) {
+	if(I2C1->ISR & I2C_ISR_BUSY)
+		return -1;
+
+	DMA1_Channel2->CCR &= ~DMA_CCR_EN;
+	DMA1_Channel2->CMAR = (uint32_t)buffer;
+	DMA1_Channel2->CNDTR = length;
+	DMA1_Channel2->CCR |= DMA_CCR_EN;
 
 	completeCallback = callback;
 
@@ -93,6 +96,8 @@ void I2C_Transmitt(uint8_t * buffer, uint16_t length, uint8_t address, void (*ca
 	} else {
 		I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos);
 	}
+
+	return 0;
 }
 /*
 void I2C_Receive(uint8_t * buffer, uint8_t length, uint8_t address, void (*callback)(void)) {

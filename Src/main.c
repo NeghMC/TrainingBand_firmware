@@ -12,14 +12,18 @@
 // STM32L031K6T6
 // https://www.st.com/en/microcontrollers-microprocessors/stm32l031k6.html#documentation
 
-volatile uint8_t buf[256] = {0};
+uint8_t buf[] = {0x02, 0xE0, 0};
+
+void test(void) {
+	buf[2] = 0xff;
+}
 
 void testTask(void * p) {
 	I2C_init();
 	peryph_en();
 
 	for(;;) {
-		I2C_ReceiveRegister(buf, 255, 0x57, 0, NULL);
+		I2C_Transmit(buf, 2, 0x57, test);
 		vTaskDelay(500);
 	}
 }
