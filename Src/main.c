@@ -14,17 +14,16 @@
 
 uint8_t buf[] = {0x02, 0xE0, 0};
 
-void test(void) {
-	buf[2] = 0xff;
-}
-
 void testTask(void * p) {
 	I2C_init();
 	peryph_en();
 
+	I2C_Transmit(buf, 2, 0x57, NULL);
+	vTaskDelay(500);
+	I2C_ReceiveRegister(buf, 2, 0x57, 0x02, NULL);
+
 	for(;;) {
-		I2C_Transmit(buf, 2, 0x57, test);
-		vTaskDelay(500);
+
 	}
 }
 StackType_t testTaskStack[120];
