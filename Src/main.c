@@ -6,6 +6,7 @@
 
 #include <Bluetooth.h>
 #include <FileSystem.h>
+#include <USART.h>
 
 // STM32L031K6T6
 // https://www.st.com/en/microcontrollers-microprocessors/stm32l031k6.html#documentation
@@ -20,11 +21,13 @@ volatile unsigned int millis;
 int main(void) {
 	/* Configure the system clock */
 	clock_setup();
-	UART_init();
+	BT_enable();
 
-	USART_prints("Hello!");
 
-	while(1) {}
+	while(1) {
+		_delay_ms(1000);
+		BT_prints("HELLO");
+	}
 
 	//spiffs * fileSystem = fs_init();
 	//(void)fileSystem;
