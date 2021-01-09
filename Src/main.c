@@ -5,6 +5,7 @@
 #include <stm32l031xx.h>
 
 #include <Bluetooth.h>
+#include <GPS.h>
 #include <FileSystem.h>
 
 // STM32L031K6T6
