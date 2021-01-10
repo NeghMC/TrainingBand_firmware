@@ -16,14 +16,15 @@
 
 static struct {
 	uint8_t offset;
+	DMA_Channel_TypeDef * channel;
 	SemaphoreHandle_t semaphoreHandle;
 	StaticSemaphore_t semaphoreBuffer;
 	TaskHandle_t taskToResume;
 } DMAs[DMA_NUMBER] = {
-	{.offset = 0},
-	{.offset = 1},
-	{.offset = 3},
-	{.offset = 4}
+	{.offset = 0, .channel = (DMA_Channel_TypeDef *)DMA1_Channel1_BASE},
+	{.offset = 1, .channel = (DMA_Channel_TypeDef *)DMA1_Channel2_BASE},
+	{.offset = 3, .channel = (DMA_Channel_TypeDef *)DMA1_Channel4_BASE},
+	{.offset = 4, .channel = (DMA_Channel_TypeDef *)DMA1_Channel5_BASE}
 };
 
 static uint8_t DMA_inited = 0;
@@ -48,41 +49,47 @@ void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * 
 			DMA_init();
 
 	xSemaphoreTake(DMAs[nr].semaphoreHandle, portMAX_DELAY);
-	DMAs[nr].taskToResume = xTaskGetCurrentTaskHandle();
 
 	DMA1_CSELR->CSELR |= (peryph << (DMAs[nr].offset * 4));
-	DMA_Channel_TypeDef * channel = (DMA_Channel_TypeDef *)DMA1_Channel1_BASE + (DMAs[nr].offset * 0x14);
-	channel->CPAR = (uint32_t)peryphAddr;
-	channel->CMAR = (uint32_t)memAddr;
-	channel->CNDTR = size;
-	channel->CCR |= DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_EN | (bool_memToPeryph ? DMA_CCR_DIR : 0);
+	DMAs[nr].channel->CPAR = (uint32_t)peryphAddr;
+	DMAs[nr].channel->CMAR = (uint32_t)memAddr;
+	DMAs[nr].channel->CNDTR = size;
+	DMAs[nr].channel->CCR |= DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_EN | (bool_memToPeryph ? DMA_CCR_DIR : 0);
 
+}
+
+void DMA_waitForTransferEnd(enum dma_number nr) {
+	DMAs[nr].channel->CCR &= ~DMA_CCR_EN;
+	DMAs[nr].taskToResume = xTaskGetCurrentTaskHandle();
 	vTaskSuspend(NULL);
 }
 
-static void giveSemaphorAndResumeTask(uint8_t nr) {
+static void endTransferAndResumeTask(enum dma_number nr) {
 	xSemaphoreGiveFromISR(DMAs[nr].semaphoreHandle, NULL);
-	vTaskResume(DMAs[nr].taskToResume);
+	if(DMAs[nr].taskToResume != NULL) {
+		vTaskResume(DMAs[nr].taskToResume);
+		DMAs[nr].taskToResume = NULL;
+	}
 }
 
 void DMA1_Channel1_IRQHandler(void) {
 	if(DMA1->ISR & DMA_ISR_TCIF1) {
-		giveSemaphorAndResumeTask(DMA_1);
+		endTransferAndResumeTask(DMA_1);
 	}
 }
 
 void DMA1_Channel2_3_IRQHandler(void) {
 	if(DMA1->ISR & DMA_ISR_TCIF2) {
-		giveSemaphorAndResumeTask(DMA_2);
+		endTransferAndResumeTask(DMA_2);
 	}
 }
 
 void DMA1_Channel4_7_IRQHandler(void) {
 	if(DMA1->ISR & DMA_ISR_TCIF4) {
-		giveSemaphorAndResumeTask(DMA_4);
+		endTransferAndResumeTask(DMA_4);
 	}
 	else if(DMA1->ISR & DMA_ISR_TCIF5) {
-		giveSemaphorAndResumeTask(DMA_5);
+		endTransferAndResumeTask(DMA_5);
 	}
 }
 

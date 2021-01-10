@@ -6,6 +6,7 @@
  */
 
 #include <stm32l031xx.h>
+#include <I2C.h>
 
 #define HR_ADDRESS 0x57
 
@@ -21,9 +22,9 @@ uint8_t data[32];
 
 void HR_setup(void) {
 	// setting
-	I2C_Transmit(buffer, 5, HR_ADDRESS, NULL);
+	I2C_Transmit(buffer, 5, HR_ADDRESS);
 }
 
 void HR_ReadWholeBuffer(void) {
-	I2C_ReceiveRegister(data, 32, HR_ADDRESS, 0x07, NULL);
+	I2C_ReadRegister(data, 32, HR_ADDRESS, 0x07);
 }

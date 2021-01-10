@@ -18,5 +18,6 @@ enum dma_number {
 
 void DMA_init(void);
 void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * memAddr, uint16_t size, uint8_t bool_memToPeryph);
+void DMA_waitForTransferEnd(enum dma_number nr);
 
 #endif /* DMA_MEN_H_ */

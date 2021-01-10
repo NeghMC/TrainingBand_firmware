@@ -19,9 +19,9 @@ void testTask(void * p) {
 	I2C_init();
 	peryph_en();
 
-	I2C_Transmit(buf, 2, 0x57, NULL);
+	I2C_Transmit(buf, 2, 0x57);
 	vTaskDelay(500);
-	I2C_ReceiveRegister(buf, 2, 0x57, 0x02, NULL);
+	I2C_ReadRegister(buf, 2, 0x57, 0x02);
 
 	for(;;) {
 

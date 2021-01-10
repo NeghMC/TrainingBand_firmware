@@ -13,7 +13,7 @@
 #define GPIO_MODER_MODE3_AF (2 << GPIO_MODER_MODE3_Pos)
 
 #define BUFFER_SIZE 79+1 // NMEA max length
-volatile char buffer[BUFFER_SIZE];
+char buffer[BUFFER_SIZE];
 
 void GPS_init() {
 	// GPIO setup
