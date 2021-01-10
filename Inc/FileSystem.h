@@ -9,9 +9,9 @@
 #define FILESYSTEM_H_
 
 //#include <lfs.h>
-#include <spiffs.h>
+//#include <spiffs.h>
 
-spiffs * fs_init(void);
+//spiffs * fs_init(void);
 /*
 int fs_open(lfs_file_t * file, const char * path, int flags);
 lfs_ssize_t fs_read(lfs_file_t * file, void * buffer, lfs_size_t size);
