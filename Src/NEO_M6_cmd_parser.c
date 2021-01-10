@@ -1,16 +1,15 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <NEO_M6_cmd_parser.h>
 
+/*
 #define NEO_BUFF_LEN 10
 #define NEO_HEADER_LEN 6
 #define NUM_FIELDS 20
 #define FIELD_LEN    10
 #define HEADER_LEN      6
-
-#define NMEA_LEN   16
-#define FREQ_LEN   14
-#define BAUD_LEN   28
+*/
 
 #define GPGGA   0
 #define GPGLL   1
@@ -36,25 +35,27 @@
 #define NAV_RATE_1    8
 #define NAV_RATE_2    9
 
-const char CFG_MSG[NMEA_LEN] = {
-	0xB5, // Header char 1
-	0x62, // Header char 2
-	0x06, // class
-	0x01, // id
-	0x08, // length LSB
-	0x00, // length MSB
-	0xF0, // payload (NMEA sentence ID char 1)
-	0x00, // payload (NMEA sentence ID char 2)
-	0x00, // payload I/O Target 0 - DDC           - (1 - enable sentence, 0 - disable)
-	0x00, // payload I/O Target 1 - Serial Port 1 - (1 - enable sentence, 0 - disable)
-	0x00, // payload I/O Target 2 - Serial Port 2 - (1 - enable sentence, 0 - disable)
-	0x00, // payload I/O Target 3 - USB           - (1 - enable sentence, 0 - disable)
-	0x00, // payload I/O Target 4 - SPI           - (1 - enable sentence, 0 - disable)
-	0x00, // payload I/O Target 5 - Reserved      - (1 - enable sentence, 0 - disable)
-	0x00, // CK_A
-	0x00  // CK_B
+const nmea_conf_package defult = {
+	.payload = {
+		0xB5, // Header char 1
+		0x62, // Header char 2
+		0x06, // class
+		0x01, // id
+		0x08, // length LSB
+		0x00, // length MSB
+		0xF0, // payload (NMEA sentence ID char 1)
+		0x00, // payload (NMEA sentence ID char 2)
+		0x00, // payload I/O Target 0 - DDC           - (1 - enable sentence, 0 - disable)
+		0x00, // payload I/O Target 1 - Serial Port 1 - (1 - enable sentence, 0 - disable)
+		0x00, // payload I/O Target 2 - Serial Port 2 - (1 - enable sentence, 0 - disable)
+		0x00, // payload I/O Target 3 - USB           - (1 - enable sentence, 0 - disable)
+		0x00, // payload I/O Target 4 - SPI           - (1 - enable sentence, 0 - disable)
+		0x00, // payload I/O Target 5 - Reserved      - (1 - enable sentence, 0 - disable)
+		0x00, // CK_A
+		0x00  // CK_B
+	}
 };
-
+/*
 const char CFG_RATE[FREQ_LEN] = {
 	0xB5, // sync char 1
 	0x62, // sync char 2
@@ -102,13 +103,13 @@ const char CFG_PRT[BAUD_LEN] = {
 	0x00, // CK_A
 	0x00  // CK_B
 };
-
-const char GPGGA_header[HEADER_LEN] = { '$', 'G', 'P', 'G', 'G', 'A' };
-const char GPGLL_header[HEADER_LEN] = { '$', 'G', 'P', 'G', 'L', 'L' };
-const char GPGLV_header[HEADER_LEN] = { '$', 'G', 'P', 'G', 'L', 'V' };
-const char GPGSA_header[HEADER_LEN] = { '$', 'G', 'P', 'G', 'S', 'A' };
-const char GPRMC_header[HEADER_LEN] = { '$', 'G', 'P', 'R', 'M', 'C' };
-const char GPVTG_header[HEADER_LEN] = { '$', 'G', 'P', 'V', 'T', 'G' };
+*/
+const char GPGGA_header[] = { '$', 'G', 'P', 'G', 'G', 'A' };
+const char GPGLL_header[] = { '$', 'G', 'P', 'G', 'L', 'L' };
+const char GPGLV_header[] = { '$', 'G', 'P', 'G', 'L', 'V' };
+const char GPGSA_header[] = { '$', 'G', 'P', 'G', 'S', 'A' };
+const char GPRMC_header[] = { '$', 'G', 'P', 'R', 'M', 'C' };
+const char GPVTG_header[] = { '$', 'G', 'P', 'V', 'T', 'G' };
 
 struct {
 	int utc_year;
@@ -135,95 +136,6 @@ struct {
 
 static uint8_t crc;
 
-/*
-
-
-void neo6mGPS_begin(usb_serial_class &port)
-{
-	usingUSB = true;
-	usb_port = &port;
-	usb_port->begin(9600);
-
-	setupGPS(115200, 10);
-}
-
-
-
-
-void neo6mGPS_begin(HardwareSerial &port, uint32_t baud, uint16_t hertz)
-{
-	_port = &port;
-	_port->begin(9600);
-
-	setupGPS(baud, hertz);
-}
-
-
-
-
-void neo6mGPS_begin(usb_serial_class &port, uint32_t baud, uint16_t hertz)
-{
-	usingUSB = true;
-	usb_port = &port;
-	usb_port->begin(9600);
-
-	setupGPS(baud, hertz);
-}
-
-*/
-
-/*
-void neo6mGPS_setupGPS(uint32_t baud, uint16_t hertz)
-{
-	setSentence(GPRMC, true);
-	//changeBaud(baud);
-	changeFreq(hertz);
-}
-*/
-
-/*
-
-void neo6mGPS_disableAllNmea()
-{
-	setSentence(GPGGA, false);
-	setSentence(GPGLL, false);
-	setSentence(GPGLV, false);
-	setSentence(GPGSA, false);
-	setSentence(GPRMC, false);
-	setSentence(GPVTG, false);
-}
-
-
-
-
-void neo6mGPS_enableAllNmea()
-{
-	setSentence(GPGGA, true);
-	setSentence(GPGLL, true);
-	setSentence(GPGSA, true);
-	setSentence(GPGLV, true);
-	setSentence(GPRMC, true);
-	setSentence(GPVTG, true);
-}
-
-
-
-
-static void enableSelectedNmea()
-{
-	//comment or uncomment based on what sentences desired
-
-	//setSentence(GPGGA, true);
-	//setSentence(GPGLL, true);
-	//setSentence(GPGSA, true);
-	//setSentence(GPGLV, true);
-	setSentence(GPRMC, true);
-	//setSentence(GPVTG, true);
-}
-
-*/
-
-
 static void insertChecksum(char packet[], const uint8_t len) {
 	uint8_t ck_a = 0;
 	uint8_t ck_b = 0;
@@ -238,7 +150,7 @@ static void insertChecksum(char packet[], const uint8_t len) {
 	packet[len - 2] = ck_a;
 	packet[len - 1] = ck_b;
 }
-
+/*
 void neo6mGPS_changeBaud(uint32_t baud)
 {
 	char configPacket[BAUD_LEN];
@@ -253,7 +165,7 @@ void neo6mGPS_changeBaud(uint32_t baud)
 	//sendPacket(configPacket, BAUD_LEN);
 
 	//delay(100);
-/*
+
 	if (usingUSB)
 	{
 		usb_port->flush();
@@ -264,7 +176,7 @@ void neo6mGPS_changeBaud(uint32_t baud)
 		_port->flush();
 		_port->begin(baud);
 	}
-	*/
+
 }
 
 
@@ -282,7 +194,7 @@ void neo6mGPS_changeFreq(uint16_t hertz)
 	//sendPacket(configPacket, FREQ_LEN);
 }
 
-
+*/
 
 /*
 bool neo6mGPS_available()
@@ -508,44 +420,10 @@ void updateValues(char * data)
 	}*/
 }
 
-
-/*
-
-static bool findSentence(const char header[])
+// Requires char buffer with size of NMEA_LEN
+void NEO_M6_setSentence(nmea_conf_package * configPacket)
 {
-	for (byte i = 0; i < HEADER_LEN; i++)
-		if (data[0][i] != header[i])
-			return false;
-
-	return true;
+	configPacket->payload[SERIAL_1_POS] = 1;
+	configPacket->payload[NMEA_ID_POS] = GPGGA;
+	insertChecksum(configPacket->payload, NMEA_LEN);
 }
-
-
-
-
-static void setSentence(char NMEA_num, bool enable)
-{
-	char configPacket[NMEA_LEN];
-	memcpy(configPacket, CFG_MSG, NMEA_LEN);
-
-	if (enable)
-		configPacket[SERIAL_1_POS] = 1;
-
-	configPacket[NMEA_ID_POS] = NMEA_num;
-	insertChecksum(configPacket, NMEA_LEN);
-
-	//sendPacket(configPacket, NMEA_LEN);
-}
-
-*/
-
-
-
-
-
-/*
-static void sendPacket(char packet[], const uint32_t len)
-{
-	sendFunction_p(packet, len);
-}
-*/

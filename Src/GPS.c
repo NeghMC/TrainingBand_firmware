@@ -6,6 +6,8 @@
  */
 
 #include <stm32l031xx.h>
+#include "NEO_M6_cmd_parser.h"
+#include "DMA_men.h"
 
 #define GPIO_MODER_MODE2_AF (2 << GPIO_MODER_MODE2_Pos)
 #define GPIO_MODER_MODE3_AF (2 << GPIO_MODER_MODE3_Pos)
@@ -44,10 +46,10 @@ void LPUART1_IRQHandler(void) {
 		LPUART1->ICR |= USART_ICR_CMCF; // clear flag
 
 		// reset
-		DMA1_Channel6->CCR &= ~DMA_CCR_EN;
+		DMA1_Channel3->CCR &= ~DMA_CCR_EN;
 		DMA1_Channel3->CMAR = (uint32_t)buffer;
 		DMA1_Channel3->CNDTR = BUFFER_SIZE;
-		DMA1_Channel6->CCR |= DMA_CCR_EN;
+		DMA1_Channel3->CCR |= DMA_CCR_EN;
 
 		(void) buffer;
 
@@ -75,5 +77,11 @@ void GPS_enable() {
 
 void GPS_disable() {
 	GPIOA->MODER |= (0b11 << GPIO_MODER_MODE1_Pos);
+}
+
+void GPS_onlyNMEA_GGA() {
+	nmea_conf_package conf;
+	NEO_M6_setSentence(&conf);
+	DMA_transfer(DMA_2, 0b101, &LPUART1->TDR, &conf, sizeof(conf), 1);
 }
 
