@@ -6,10 +6,10 @@
  */
 
 #include <OLED.h>
-#include <I2C.h>
 #include <power_men.h>
 #include <FreeRTOS.h>
 #include <task.h>
+#include <stm32l0xx_hal_i2c.h>
 
 #define OLED_ADDRESS 0x3c
 //lub 0x3d
@@ -113,10 +113,17 @@ void OLED_cmd(uint8_t cmd) {
 	I2C_Transmit(com, 2, OLED_ADDRESS);
 }
 
+void OLED_data(uint8_t * buf, uint16_t size) {
+
+}
+
 void OLED_init() {
 	I2C_init();
 	peryph_en();
 	vTaskDelay(50);
+
+	HAL_I2C_Master_Transmit(hi2c, DevAddress, pData, Size, Timeout)
+
 	OLED_cmd(SSD1306_DISPLAYOFF);
 				OLED_cmd(SSD1306_SETDISPLAYCLOCKDIV);
 				OLED_cmd(REFRESH_MID);
