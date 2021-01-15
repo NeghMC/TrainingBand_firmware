@@ -19,7 +19,7 @@ float beatRate = 0;
 
 static const uint8_t configuration[] = {
 		0x09 /*configuration address*/,
-		0x03 /*Mode Configuration*/,
+		0x02 /*Mode Configuration*/,
 		0x27 /*SpO2 Configuration*/,
 		0x00 /*RESERVED*/,
 		0x0F /*LED1 Pulse Amplitude*/
@@ -49,6 +49,8 @@ void HR_task(void * p) {
 	TickType_t lastBeat;
 	TickType_t now = xTaskGetTickCount();
 
+	float average = 0;
+
 	for(;;) {
 		vTaskDelayUntil(&now, pdMS_TO_TICKS(320));
 		I2C_ReadRegister(pulseData, FULL_BUF_SIZE, HR_DEV_ADDRESS, HR_FIFO_DATA_ADDRESS);
@@ -59,8 +61,8 @@ void HR_task(void * p) {
 				TickType_t delta = xTaskGetTickCount() - lastBeat;
 				lastBeat =  xTaskGetTickCount();
 
-				beatRate = (beatRate * DT) + ( 60 / (delta / 1000.0) );
-				beatRate /= (DT + 1);
+				beatRate =  60 / (delta / 1000.0);
+				average = (DT * average + beatRate) / (DT + 1);
 			}
 		}
 	}
