@@ -10,6 +10,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <heartRate.h>
+#include <power_men.h>
 
 #define HR_DEV_ADDRESS 0x57
 #define HR_FIFO_DATA_ADDRESS 0x07
@@ -37,7 +38,8 @@ uint8_t pulseData[FULL_BUF_SIZE];
 
 void HR_init(void) {
 	// setting
-
+	I2C_init();
+	peryph_en();
 	I2C_Transmit(configuration, sizeof(configuration), HR_DEV_ADDRESS);
 }
 
@@ -64,7 +66,7 @@ void HR_task(void * p) {
 	}
 }
 
-#define HR_STACK_SIZE 200
+#define HR_STACK_SIZE 300
 static StackType_t stack[HR_STACK_SIZE];
 static StaticTask_t task;
 

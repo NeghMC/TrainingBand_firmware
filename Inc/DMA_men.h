@@ -13,11 +13,13 @@ enum dma_number {
 	DMA_1,
 	DMA_2,
 	DMA_4,
-	DMA_5
+	DMA_5,
+	DMA_6,
+	DMA_7
 };
 
 void DMA_init(void);
-void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * memAddr, uint16_t size, uint8_t bool_memToPeryph);
+void DMA_transfer(enum dma_number nr, uint8_t peryph, volatile void * peryphAddr, const void * memAddr, uint16_t size, uint8_t bool_memToPeryph);
 void DMA_waitForTransferEnd(enum dma_number nr);
 
 #endif /* DMA_MEN_H_ */
