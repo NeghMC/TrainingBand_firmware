@@ -39,7 +39,7 @@ void I2C1_IRQHandler(void) {
 	}
 }
 
-void I2C_Transmit(uint8_t * buffer, uint16_t length, uint8_t address) {
+void I2C_Transmit(const uint8_t * buffer, uint16_t length, uint8_t address) {
 	xSemaphoreTake(&semaphoreHandle, portMAX_DELAY);
 	DMA_transfer(DMA_2, 0b110, &I2C1->TXDR, buffer, length, 1);
 	taskToResume = xTaskGetCurrentTaskHandle();

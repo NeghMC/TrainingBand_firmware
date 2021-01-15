@@ -57,7 +57,7 @@
 *******************************************************************************
 */
 
-#include "Arduino.h"
+//#include "Arduino.h"
 #include "spo2_algorithm.h"
 
 #if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)

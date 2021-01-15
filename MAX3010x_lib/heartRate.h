@@ -55,11 +55,11 @@
 * 
 */
 
-#if (ARDUINO >= 100)
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
+#include <stdint.h>
+
+typedef uint8_t bool;
+#define false 0
+#define true 1
 
 bool checkForBeat(int32_t sample);
 int16_t averageDCEstimator(int32_t *p, uint16_t x);
