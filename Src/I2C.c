@@ -19,7 +19,7 @@ static TaskHandle_t taskToResume;
 
 static uint8_t inited = 0;
 
-static volatile uint16_t toRead = 0;
+static volatile uint16_t toRead = 0, toWrite = 0;
 static uint8_t address;
 
 void I2C_init(void) {
@@ -49,6 +49,14 @@ void I2C1_IRQHandler(void) {
 		if(toRead) {
 			I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (toRead << I2C_CR2_NBYTES_Pos) | I2C_CR2_RD_WRN;
 			toRead = 0;
+		} else if(toWrite > 0) {
+			if(toWrite > 255) {
+				toWrite -= 255;
+				I2C1->CR2 |= (255 << I2C_CR2_NBYTES_Pos) | I2C_CR2_RELOAD;
+			} else {
+				I2C1->CR2 |= (toWrite << I2C_CR2_NBYTES_Pos);
+				toWrite = 0;
+			}
 		} else {
 			// We should switch context so the ISR returns to a different task.
 			// NOTE:  How this is done depends on the port you are using.  Check
@@ -66,13 +74,13 @@ void I2C_Transmit(const uint8_t * buffer, uint16_t length, uint8_t address) {
 	DMA_transfer(DMA_2, 0b110, &I2C1->TXDR, buffer, length, 1);
 	taskToResume = xTaskGetCurrentTaskHandle();
 
-	while(length > 255) {
-		length -= 255;
+	if(length > 255) {
+		toWrite = length - 255;
 		I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (255 << I2C_CR2_NBYTES_Pos) | I2C_CR2_RELOAD;
-		vTaskSuspend(NULL);
+	} else {
+		I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos);
 	}
 
-	I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos);
 	vTaskSuspend(NULL);
 
 	xSemaphoreGive(semaphoreHandle);
