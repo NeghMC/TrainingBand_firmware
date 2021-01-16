@@ -48,11 +48,13 @@ void DMA_init(void) {
 	DMA_inited = 1;
 }
 
+void DMA_reserve(enum dma_number nr) {
+	xSemaphoreTake(DMAs[nr].semaphoreHandle, portMAX_DELAY);
+}
+
 void DMA_transfer(enum dma_number nr, uint8_t peryph, volatile void * peryphAddr, const void * memAddr, uint16_t size, uint8_t bool_memToPeryph) {
 	if(DMA_inited == 0)
 			DMA_init();
-
-	xSemaphoreTake(DMAs[nr].semaphoreHandle, portMAX_DELAY);
 
 	DMA1_CSELR->CSELR |= (peryph << (DMAs[nr].offset * 4));
 	DMAs[nr].channel->CPAR = (uint32_t)peryphAddr;
