@@ -18,7 +18,6 @@
 float beatRate = 0;
 
 static const uint8_t configuration[] = {
-		0x09 /*configuration address*/,
 		0x02 /*Mode Configuration*/,
 		0x27 /*SpO2 Configuration*/,
 		0x00 /*RESERVED*/,
@@ -40,7 +39,7 @@ void HR_init(void) {
 	// setting
 	I2C_init();
 	peryph_en();
-	I2C_Transmit(configuration, sizeof(configuration), HR_DEV_ADDRESS);
+	I2C_WriteReg(HR_DEV_ADDRESS, 0x09, configuration, sizeof(configuration));
 }
 
 void HR_task(void * p) {
@@ -53,7 +52,7 @@ void HR_task(void * p) {
 
 	for(;;) {
 		vTaskDelayUntil(&now, pdMS_TO_TICKS(320));
-		I2C_ReadRegister(pulseData, FULL_BUF_SIZE, HR_DEV_ADDRESS, HR_FIFO_DATA_ADDRESS);
+		I2C_ReadReg(HR_DEV_ADDRESS, HR_FIFO_DATA_ADDRESS, pulseData, FULL_BUF_SIZE);
 		for(int i = 0; i < HR_BUFFER_SIZE; ++i) {
 			int index = i * 3;
 			uint32_t sample = (((uint32_t)pulseData[index]) << 16) | (((uint32_t)pulseData[index+1]) << 8) | ((uint32_t)pulseData[index+2]);
@@ -73,5 +72,5 @@ static StackType_t stack[HR_STACK_SIZE];
 static StaticTask_t task;
 
 void HR_createTask(void) {
-	xTaskCreateStatic(HR_task, "HR", HR_STACK_SIZE, NULL, 1, stack, &task);
+	xTaskCreateStatic(HR_task, "HR", HR_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, stack, &task);
 }

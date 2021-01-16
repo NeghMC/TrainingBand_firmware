@@ -11,7 +11,8 @@
 #include <stdint.h>
 
 void I2C_init(void);
-void I2C_Transmit(const uint8_t * buffer, uint16_t length, uint8_t address);
-void I2C_ReadRegister(uint8_t * buffer, uint8_t length, uint8_t devAddress, uint8_t regAddress);
+
+void I2C_ReadReg(uint8_t devAddress, uint8_t regAddress, uint8_t * data, uint8_t length);
+void I2C_WriteReg(uint8_t devAddress, uint8_t regAddress, uint8_t * data, uint8_t length);
 
 #endif /* I2C_H_ */

@@ -49,10 +49,12 @@ void DMA_init(void) {
 }
 
 void DMA_reserve(enum dma_number nr) {
+	if(DMA_inited == 0)
+		DMA_init();
 	xSemaphoreTake(DMAs[nr].semaphoreHandle, portMAX_DELAY);
 }
 
-void DMA_transfer(enum dma_number nr, uint8_t peryph, volatile void * peryphAddr, const void * memAddr, uint16_t size, uint8_t bool_memToPeryph) {
+void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * memAddr, uint16_t size, uint8_t bool_memToPeryph) {
 	if(DMA_inited == 0)
 			DMA_init();
 
