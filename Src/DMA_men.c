@@ -54,6 +54,10 @@ void DMA_reserve(enum dma_number nr) {
 	xSemaphoreTake(DMAs[nr].semaphoreHandle, portMAX_DELAY);
 }
 
+void DMA_release(enum dma_number nr) {
+	xSemaphoreGiveFromISR(DMAs[nr].semaphoreHandle, NULL);
+}
+
 void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * memAddr, uint16_t size, uint8_t bool_memToPeryph) {
 	if(DMA_inited == 0)
 			DMA_init();
@@ -73,7 +77,6 @@ void DMA_waitForTransferEnd(enum dma_number nr) {
 
 static void endTransferAndResumeTask(enum dma_number nr) {
 	DMAs[nr].channel->CCR &= ~DMA_CCR_EN;
-	xSemaphoreGiveFromISR(DMAs[nr].semaphoreHandle, NULL);
 	if(DMAs[nr].taskToResume != NULL) {
 		xTaskResumeFromISR(DMAs[nr].taskToResume);
 		DMAs[nr].taskToResume = NULL;

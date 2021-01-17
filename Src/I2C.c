@@ -19,7 +19,7 @@ static TaskHandle_t taskToResume;
 
 static uint8_t inited = 0;
 
-static volatile uint8_t toRead = 0;
+static volatile uint16_t toRead, toWrite;
 
 
 void I2C_init(void) {
@@ -47,7 +47,7 @@ void I2C_init(void) {
 void I2C1_IRQHandler(void) {
 	if(I2C1->ISR & I2C_ISR_TC) {
 		if(toRead) {
-			I2C1->CR2 |= I2C_CR2_START |  (toRead << I2C_CR2_NBYTES_Pos) | I2C_CR2_RD_WRN;
+			I2C1->CR2 = (I2C1->CR2 & ~(0xff << I2C_CR2_NBYTES_Pos)) | I2C_CR2_START |  (toRead << I2C_CR2_NBYTES_Pos) | I2C_CR2_RD_WRN ;
 			toRead = 0;
 		} else {
 			// We should switch context so the ISR returns to a different task.
@@ -57,6 +57,16 @@ void I2C1_IRQHandler(void) {
 			I2C1->CR2 |= I2C_CR2_STOP;
 		}
 
+	} else if(I2C1->ISR & I2C_ISR_TCR) {
+		if(toWrite) {
+			if(toWrite > 255) {
+				I2C1->CR2 |= (255 << I2C_CR2_NBYTES_Pos) | I2C_CR2_RELOAD;
+				toWrite -= 255;
+			} else {
+				I2C1->CR2 = (I2C1->CR2 & ~((0xff << I2C_CR2_NBYTES_Pos) | I2C_CR2_RELOAD)) | (toWrite << I2C_CR2_NBYTES_Pos);
+				toWrite = 0;
+			}
+		}
 	}
 }
 /*
@@ -111,17 +121,25 @@ void I2C_ReadReg(uint8_t devAddress, uint8_t regAddress, uint8_t * data, uint8_t
 	I2C1->TXDR = regAddress;
 	I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | (1 << I2C_CR2_NBYTES_Pos);
 	vTaskSuspend(NULL);
+	DMA_release(DMA_7);
 	xSemaphoreGive(semaphoreHandle);
 }
 
-void I2C_WriteReg(uint8_t devAddress, uint8_t regAddress, const uint8_t * data, uint8_t length) {
+void I2C_WriteReg(uint8_t devAddress, uint8_t regAddress, const uint8_t * data, uint16_t length) {
 	xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
 	taskToResume = xTaskGetCurrentTaskHandle();
 	I2C1->TXDR = regAddress;
 	DMA_reserve(DMA_2);
 	DMA_transfer(DMA_2, 0b110, (void*)&I2C1->TXDR, data, length, 1);
-	I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | ((length+1) << I2C_CR2_NBYTES_Pos);
+	length += 1;
+	if(length > 255) {
+		toWrite = length - 255;
+		I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | (255 << I2C_CR2_NBYTES_Pos) | I2C_CR2_RELOAD;
+	} else {
+		I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos);
+	}
 	vTaskSuspend(NULL);
+	DMA_release(DMA_2);
 	xSemaphoreGive(semaphoreHandle);
 }
 

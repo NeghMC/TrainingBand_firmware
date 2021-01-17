@@ -3,6 +3,7 @@
  *
  *  Created on: 15 sty 2021
  *      Author: NeghM
+ *      library based on: https://github.com/adafruit/Adafruit_SSD1306/blob/master/Adafruit_SSD1306.cpp
  */
 
 #include <OLED.h>
@@ -116,6 +117,37 @@ void OLED_init() {
 	I2C_init();
 	peryph_en();
 	vTaskDelay(50);
+
+	OLED_cmd(SSD1306_DISPLAYOFF);
+	OLED_cmd(SSD1306_SETDISPLAYCLOCKDIV);
+	OLED_cmd(0x80);
+	OLED_cmd(SSD1306_SETDISPLAYOFFSET);
+	OLED_cmd(0x00);
+	OLED_cmd(SSD1306_SETSTARTLINE | 0x0);
+	OLED_cmd(SSD1306_CHARGEPUMP);
+	OLED_cmd(0x14);
+	OLED_cmd(SSD1306_MEMORYMODE); // horizontal memory mode
+	OLED_cmd(0x00);
+	OLED_cmd(SSD1306_SEGREMAP | 0x1);
+	OLED_cmd(SSD1306_COMSCANDEC);
+	// 32
+	OLED_cmd(SSD1306_SETCOMPINS);
+	OLED_cmd(0x02);
+	OLED_cmd(SSD1306_SETMULTIPLEX);
+	OLED_cmd(0x1F);
+	OLED_cmd(SSD1306_SETCONTRAST);
+	OLED_cmd(0x8f);
+
+	OLED_cmd(SSD1306_SETPRECHARGE);
+	OLED_cmd(0xF1);
+	OLED_cmd(SSD1306_SETVCOMDETECT);
+	OLED_cmd(0x40);
+	OLED_cmd(SSD1306_DISPLAYALLON_RESUME);
+	OLED_cmd(SSD1306_NORMALDISPLAY);
+	OLED_cmd(SSD1306_DEACTIVATE_SCROLL);
+	OLED_cmd(SSD1306_DISPLAYON);
+
+	/* mirekk
 	OLED_cmd(SSD1306_DISPLAYOFF);
 				OLED_cmd(SSD1306_SETDISPLAYCLOCKDIV);
 				OLED_cmd(REFRESH_MID);
@@ -125,8 +157,8 @@ void OLED_init() {
 				OLED_cmd(SSD1306_SETSTARTLINE | 0x0);
 
 				OLED_cmd(SSD1306_CHARGEPUMP);
-				// wewnetrzne zasilanie 9v
-				OLED_cmd(0x14);
+
+				OLED_cmd(0x14); // wewnetrzne zasilanie 9v
 				//OLED_cmd(0x10); // zewnetrzne
 
 				OLED_cmd(SSD1306_MEMORYMODE); // horizontal memory mode
@@ -135,9 +167,10 @@ void OLED_init() {
 				OLED_cmd(SSD1306_COMSCANDEC);
 
 				OLED_cmd(SSD1306_SETCONTRAST);
-				// wewnetrzne zasilanie 9v
-				OLED_cmd(0xCF);
+
+				//OLED_cmd(0xCF); // wewnetrzne zasilanie 9v
 				//OLED_cmd(0x9F); // zewnetrzne
+				OLED_cmd(0x8f);
 
 				OLED_cmd(SSD1306_SETPRECHARGE);
 
@@ -147,14 +180,14 @@ void OLED_init() {
 				OLED_cmd(SSD1306_SETCOMPINS);
 				OLED_cmd(0x02);
 
-				OLED_cmd(SSD1306_SETVCOMDETECT);
-				OLED_cmd(0x40);
+				//OLED_cmd(SSD1306_SETVCOMDETECT); // ?
+				//OLED_cmd(0x40);
 
 				OLED_cmd(SSD1306_DISPLAYALLON_RESUME);
 				OLED_cmd(SSD1306_NORMALDISPLAY);
 
 				OLED_cmd(SSD1306_DISPLAYON);
-
+*/
 }
 
 void OLED_clear() {
@@ -163,10 +196,14 @@ void OLED_clear() {
 }
 
 void OLED_display(void) {
-	OLED_cmd(SSD1306_SETLOWCOLUMN | 0x0);
-	OLED_cmd(SSD1306_SETHIGHCOLUMN | 0x0);
-	OLED_cmd(SSD1306_SETSTARTLINE | 0x0);
-	I2C_WriteReg(OLED_ADDRESS, OLED_DATA, screenBuffer, 254);
+	OLED_cmd(SSD1306_PAGEADDR);
+	OLED_cmd(0x00);
+	OLED_cmd(0xFF);
+	OLED_cmd(SSD1306_COLUMNADDR);
+	OLED_cmd(0x00);
+	OLED_cmd(0x7f);
+
+	I2C_WriteReg(OLED_ADDRESS, OLED_DATA, screenBuffer, sizeof(screenBuffer));
 }
 
 static void oled_setPixel(int x, int y, uint8_t color) {
