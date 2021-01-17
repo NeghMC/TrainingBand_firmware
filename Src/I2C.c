@@ -21,6 +21,7 @@ static uint8_t inited = 0;
 
 static volatile uint8_t toRead = 0;
 
+
 void I2C_init(void) {
 	if(inited)
 		return;
@@ -58,24 +59,24 @@ void I2C1_IRQHandler(void) {
 
 	}
 }
-
+/*
 void I2C_Transmit(const uint8_t * buffer, uint16_t length, uint8_t address) {
 	xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
 	DMA_transfer(DMA_2, 0b110, (void*)&I2C1->TXDR, buffer, length, 1);
 	taskToResume = xTaskGetCurrentTaskHandle();
 
-	while(length > 255) {
-		length -= 255;
+	if(length > 255) {
+		toWrite = length - 255;
 		I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (255 << I2C_CR2_NBYTES_Pos) | I2C_CR2_RELOAD;
-		vTaskSuspend(NULL);
+	} else {
+		I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos);
 	}
 
-	I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos);
 	vTaskSuspend(NULL);
 
 	xSemaphoreGive(semaphoreHandle);
 }
-/*
+
 void I2C_Receive(uint8_t * buffer, uint8_t length, uint8_t address, void (*callback)(void)) {
 	receive.buffer = buffer;
 	receive.length = length;
@@ -117,10 +118,9 @@ void I2C_WriteReg(uint8_t devAddress, uint8_t regAddress, const uint8_t * data, 
 	xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
 	taskToResume = xTaskGetCurrentTaskHandle();
 	I2C1->TXDR = regAddress;
-	length += 1;
 	DMA_reserve(DMA_2);
 	DMA_transfer(DMA_2, 0b110, (void*)&I2C1->TXDR, data, length, 1);
-	I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos);
+	I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | ((length+1) << I2C_CR2_NBYTES_Pos);
 	vTaskSuspend(NULL);
 	xSemaphoreGive(semaphoreHandle);
 }
