@@ -55,7 +55,7 @@ void DMA_reserve(enum dma_number nr) {
 }
 
 void DMA_release(enum dma_number nr) {
-	xSemaphoreGiveFromISR(DMAs[nr].semaphoreHandle, NULL);
+	xSemaphoreGive(DMAs[nr].semaphoreHandle);
 }
 
 void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * memAddr, uint16_t size, uint8_t bool_memToPeryph) {

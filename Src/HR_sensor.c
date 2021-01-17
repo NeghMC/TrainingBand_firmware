@@ -52,6 +52,7 @@ void HR_task(void * p) {
 
 	for(;;) {
 		vTaskDelayUntil(&now, pdMS_TO_TICKS(320));
+		now = xTaskGetTickCount();
 		I2C_ReadReg(HR_DEV_ADDRESS, HR_FIFO_DATA_ADDRESS, pulseData, FULL_BUF_SIZE);
 		for(int i = 0; i < HR_BUFFER_SIZE; ++i) {
 			int index = i * 3;
@@ -64,7 +65,12 @@ void HR_task(void * p) {
 				average = (DT * average + beatRate) / (DT + 1);
 			}
 		}
+		vTaskDelay(1000);
+		vTaskDelay(1000);
+		vTaskDelay(1000);
 	}
+
+
 }
 
 #define HR_STACK_SIZE 300

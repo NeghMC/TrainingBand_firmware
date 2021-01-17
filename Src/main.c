@@ -21,17 +21,13 @@ void display_task(void * p) {
 	OLED_init();
 
 	char str[10];
-	int i = 0;
 
 	for(;;) {
-		//ftoa(i, str, 1);
-		itoa(i, str, 10);
-		//OLED_clear();
+		ftoa(beatRate, str, 1);
 		OLED_clear();
 		oled_puts(1, 1, str, 1, 1);
 		OLED_display();
 		vTaskDelay(1000);
-		i++;
 	}
 }
 
@@ -43,9 +39,9 @@ int main(void) {
 	/* Configure the system clock */
  	clock_setup();
 
-	//HR_createTask();
+	HR_createTask();
 
-	xTaskCreateStatic(display_task,"DT", DIS_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, disStack, &disTask);
+	//xTaskCreateStatic(display_task,"DT", DIS_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, disStack, &disTask);
 	vTaskStartScheduler();
 }
 
