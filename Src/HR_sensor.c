@@ -65,9 +65,6 @@ void HR_task(void * p) {
 				average = (DT * average + beatRate) / (DT + 1);
 			}
 		}
-		vTaskDelay(1000);
-		vTaskDelay(1000);
-		vTaskDelay(1000);
 	}
 
 

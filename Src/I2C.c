@@ -116,7 +116,7 @@ void I2C_ReadReg(uint8_t devAddress, uint8_t regAddress, uint8_t * data, uint8_t
 	xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
 	taskToResume = xTaskGetCurrentTaskHandle();
 	DMA_reserve(DMA_7);
-	DMA_transfer(DMA_7, 6, (void*)&I2C1->RXDR, data, length + 1, 0); // ! there was problem
+	DMA_transfer(DMA_7, 6, (void*)&I2C1->RXDR, data, length, 0); // ! there was problem
 	toRead = length;
 	I2C1->TXDR = regAddress;
 	I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | (1 << I2C_CR2_NBYTES_Pos);

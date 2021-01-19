@@ -41,7 +41,7 @@ int main(void) {
 
 	HR_createTask();
 
-	//xTaskCreateStatic(display_task,"DT", DIS_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, disStack, &disTask);
+	xTaskCreateStatic(display_task,"DT", DIS_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, disStack, &disTask);
 	vTaskStartScheduler();
 }
 

@@ -9,8 +9,9 @@
 #include <FreeRTOS.h>
 #include <semphr.h>
 #include <task.h>
+//#include <utils.h>
 
-#include "DMA_men.h"
+#include <DMA_men.h>
 
 #define DMA_NUMBER (sizeof(DMAs)/sizeof(DMAs[0]))
 
@@ -31,7 +32,19 @@ static struct {
 
 static uint8_t DMA_inited = 0;
 
+void trap() {
+	while(1);
+}
+
+void static interruptDetectTrap() {
+	if(SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) {
+		trap();
+	}
+}
+
 void DMA_init(void) {
+	interruptDetectTrap();
+
 	if(DMA_inited)
 		return;
 
@@ -49,18 +62,20 @@ void DMA_init(void) {
 }
 
 void DMA_reserve(enum dma_number nr) {
+	interruptDetectTrap();
 	if(DMA_inited == 0)
 		DMA_init();
 	xSemaphoreTake(DMAs[nr].semaphoreHandle, portMAX_DELAY);
 }
 
 void DMA_release(enum dma_number nr) {
+	interruptDetectTrap();
 	xSemaphoreGive(DMAs[nr].semaphoreHandle);
 }
 
 void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * memAddr, uint16_t size, uint8_t bool_memToPeryph) {
 	if(DMA_inited == 0)
-			DMA_init();
+			trap();
 
 	DMA1_CSELR->CSELR |= (peryph << (DMAs[nr].offset * 4));
 	DMAs[nr].channel->CPAR = (uint32_t)peryphAddr;
@@ -71,6 +86,7 @@ void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * 
 }
 
 void DMA_waitForTransferEnd(enum dma_number nr) {
+	interruptDetectTrap();
 	DMAs[nr].taskToResume = xTaskGetCurrentTaskHandle();
 	vTaskSuspend(NULL);
 }
