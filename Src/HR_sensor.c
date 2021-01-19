@@ -51,7 +51,7 @@ void HR_task(void * p) {
 	float average = 0;
 
 	for(;;) {
-		vTaskDelayUntil(&now, pdMS_TO_TICKS(320));
+		vTaskDelayUntil(&now, pdMS_TO_TICKS(250));
 		now = xTaskGetTickCount();
 		I2C_ReadReg(HR_DEV_ADDRESS, HR_FIFO_DATA_ADDRESS, pulseData, FULL_BUF_SIZE);
 		for(int i = 0; i < HR_BUFFER_SIZE; ++i) {
@@ -70,7 +70,7 @@ void HR_task(void * p) {
 
 }
 
-#define HR_STACK_SIZE 300
+#define HR_STACK_SIZE 70
 static StackType_t stack[HR_STACK_SIZE];
 static StaticTask_t task;
 

@@ -58,8 +58,8 @@
 
 #define configUSE_PREEMPTION                     1
 #define configSUPPORT_STATIC_ALLOCATION          1
-#define configSUPPORT_DYNAMIC_ALLOCATION         1
-#define configUSE_IDLE_HOOK                      0
+#define configSUPPORT_DYNAMIC_ALLOCATION         0
+#define configUSE_IDLE_HOOK                      1
 #define configUSE_TICK_HOOK                      0
 #define configCPU_CLOCK_HZ                       ( 1000000 )
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
@@ -79,6 +79,8 @@
    if lengths will always be less than the number of bytes in a size_t. */
 #define configMESSAGE_BUFFER_LENGTH_TYPE         size_t
 /* USER CODE END MESSAGE_BUFFER_LENGTH_TYPE */
+
+#define configCHECK_FOR_STACK_OVERFLOW 2
 
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES                    0
@@ -104,6 +106,7 @@ to exclude the API function. */
 #define INCLUDE_xQueueGetMutexHolder         1
 #define INCLUDE_uxTaskGetStackHighWaterMark  1
 #define INCLUDE_eTaskGetState                1
+#define INCLUDE_xTaskGetHandle				 1
 
 /*
  * The CMSIS-RTOS V2 FreeRTOS wrapper is dependent on the heap implementation used

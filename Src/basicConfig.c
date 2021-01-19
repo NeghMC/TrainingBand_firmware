@@ -18,9 +18,13 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **pxIdleTaskTCBBuffer, StackType
 }
 
 void vApplicationIdleHook() {
+	UBaseType_t uxHighWaterMark;
 
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( xTaskGetHandle("OT"));
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( xTaskGetHandle("HR"));
+	;
 }
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char * pcTaskName) {
-
+	;
 }

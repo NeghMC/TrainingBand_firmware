@@ -61,4 +61,6 @@ void oled_putn(int x, int y, char * s, uint8_t size, uint8_t color);
 void OLED_display(void);
 void OLED_clear();
 
+void OLED_createTask(void);
+
 #endif /* OLED_H_ */
