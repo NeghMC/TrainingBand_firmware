@@ -77,6 +77,8 @@ void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * 
 	if(DMA_inited == 0)
 			trap();
 
+	DMAs[nr].taskToResume = xTaskGetCurrentTaskHandle();
+
 	DMA1_CSELR->CSELR |= (peryph << (DMAs[nr].offset * 4));
 	DMAs[nr].channel->CPAR = (uint32_t)peryphAddr;
 	DMAs[nr].channel->CMAR = (uint32_t)memAddr;
@@ -87,14 +89,15 @@ void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * 
 
 void DMA_waitForTransferEnd(enum dma_number nr) {
 	interruptDetectTrap();
-	DMAs[nr].taskToResume = xTaskGetCurrentTaskHandle();
-	vTaskSuspend(NULL);
+	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 }
 
 static void endTransferAndResumeTask(enum dma_number nr) {
 	DMAs[nr].channel->CCR &= ~DMA_CCR_EN;
 	if(DMAs[nr].taskToResume != NULL) {
-		xTaskResumeFromISR(DMAs[nr].taskToResume);
+		BaseType_t pxHigherPriorityTaskWoken;
+		vTaskNotifyGiveFromISR(DMAs[nr].taskToResume, &pxHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
 		DMAs[nr].taskToResume = NULL;
 	}
 }

@@ -53,7 +53,10 @@ void I2C1_IRQHandler(void) {
 			// We should switch context so the ISR returns to a different task.
 			// NOTE:  How this is done depends on the port you are using.  Check
 			// the documentation and examples for your port.
-			portYIELD_FROM_ISR(xTaskResumeFromISR(taskToResume));
+			BaseType_t pxHigherPriorityTaskWoken;
+			vTaskNotifyGiveFromISR(taskToResume, &pxHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
+
 			I2C1->CR2 |= I2C_CR2_STOP;
 		}
 
@@ -120,7 +123,7 @@ void I2C_ReadReg(uint8_t devAddress, uint8_t regAddress, uint8_t * data, uint8_t
 	toRead = length;
 	I2C1->TXDR = regAddress;
 	I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | (1 << I2C_CR2_NBYTES_Pos);
-	vTaskSuspend(NULL);
+	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 	DMA_release(DMA_7);
 	xSemaphoreGive(semaphoreHandle);
 }
@@ -138,7 +141,7 @@ void I2C_WriteReg(uint8_t devAddress, uint8_t regAddress, const uint8_t * data, 
 	} else {
 		I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos);
 	}
-	vTaskSuspend(NULL);
+	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 	DMA_release(DMA_2);
 	xSemaphoreGive(semaphoreHandle);
 }

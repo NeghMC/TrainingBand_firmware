@@ -17,12 +17,11 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **pxIdleTaskTCBBuffer, StackType
 	*ulIdleTaskStackSize = (uint32_t){IDLE_TASK_STACK_SIZE};
 }
 
+TaskStatus_t stat[6];
+
 void vApplicationIdleHook() {
 	UBaseType_t uxHighWaterMark;
-
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( xTaskGetHandle("OT"));
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( xTaskGetHandle("HR"));
-	;
+	int ret = uxTaskGetSystemState(stat, 6, NULL);
 }
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char * pcTaskName) {
