@@ -28,18 +28,20 @@ static uint8_t fifo_rd_ptr, fifo_wr_ptr;
 
 static const uint8_t configuration[] = {
 		0x00, /* FIFO configuration */
-		0x02, /*Mode Configuration*/ //red only
+		0x03, /*Mode Configuration*/ // spo
 		0x24, /*SpO2 Configuration*/ //4096, 100, 15
 		0x00, /*RESERVED*/
-		0x1F /*LED1 Pulse Amplitude*/
+		0x00, /*LED1 Pulse Amplitude*/
+		0x1F /* IR Pulsa amplitude */
 };
 
 //#define SAMPLE_NUMBER 96
-#define HR_SAMPLE_SIZE 3
+#define HR_SAMPLE_SIZE 6
 #define HR_BUFFER_SIZE 32
 #define FULL_BUF_SIZE (HR_BUFFER_SIZE * HR_SAMPLE_SIZE)
 
 uint8_t pulseData[FULL_BUF_SIZE];
+uint16_t * sampleBuffer = (uint16_t*)pulseData;
 //uint32_t redData[SAMPLE_NUMBER];
 //uint32_t IRData[SAMPLE_NUMBER];
 
@@ -68,6 +70,40 @@ int digit_counter(uint32_t n) {
 	 return count;
 }
 
+// median filter
+
+/* Function to sort an array using insertion sort*/
+void insertionSort(uint16_t arr[], int n)
+{
+    int i, key, j;
+    for (i = 1; i < n; i++)
+    {
+        key = arr[i];
+        j = i - 1;
+
+        /* Move elements of arr[0..i-1], that are
+        greater than key, to one position ahead
+        of their current position */
+        while (j >= 0 && arr[j] > key)
+        {
+            arr[j + 1] = arr[j];
+            j = j - 1;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+#define MEDIAN_FILTER_ROW 6
+int medianFilter(uint16_t tab[]) {
+	insertionSort(tab, MEDIAN_FILTER_ROW);
+	if(MEDIAN_FILTER_ROW & 0x1) {
+		return tab[MEDIAN_FILTER_ROW / 2 - 1];
+	} else {
+		return (tab[MEDIAN_FILTER_ROW / 2] + tab[MEDIAN_FILTER_ROW / 2 - 1]) / 2;
+	}
+}
+/// end
+
 void HR_task(void * p) {
 
 	TickType_t now = xTaskGetTickCount();
@@ -76,7 +112,7 @@ void HR_task(void * p) {
 	BT_init();
 
 	for(;;) {
-		vTaskDelayUntil(&now, pdMS_TO_TICKS(300));
+		vTaskDelayUntil(&now, pdMS_TO_TICKS(200));
 		now = xTaskGetTickCount();
 
 		I2C_reserve();
@@ -100,23 +136,32 @@ void HR_task(void * p) {
 		}
 		I2C_release();
 
+		// construct samples
+		for(int i = 0; i < availableSamples; ++i) {
+			int byte = i * HR_SAMPLE_SIZE;
+			sampleBuffer[i] = (((uint16_t)pulseData[byte+4]) << 8) | ((uint16_t)pulseData[byte+5]);
+		}
+
+		/*
+		// median filtering
+		for(int i = (MEDIAN_FILTER_ROW / 2); i < availableSamples - (MEDIAN_FILTER_ROW / 2); ++i) {
+			uint16_t copy[MEDIAN_FILTER_ROW];
+			for(int j = i; j < i + MEDIAN_FILTER_ROW; ++j)
+				copy[j - i] = sampleBuffer[j];
+			sampleBuffer[i] = medianFilter(copy);
+		}*/
+
 		// samples analytics
 		for(int i = 0; i < availableSamples; ++i) {
-			int byte = i * 3;
-			int newSample = (((uint32_t)pulseData[byte]) << 16) | (((uint32_t)pulseData[byte+1]) << 8) | ((uint32_t)pulseData[byte+2]);
-
-			// satuation filter
-			sample = newSample & 0x7fff;
-
 			lastBeatCounter++;
 
 			// transform to text for uart transmission
-			itoa(sample, cbuffer + cbufferp, 10);
-			cbufferp += digit_counter(sample);
+			itoa(sampleBuffer[i], cbuffer + cbufferp, 10);
+			cbufferp += digit_counter(sampleBuffer[i]);
 			cbuffer[cbufferp] = '\n';
 			cbufferp++;
 
-			if(checkForBeat(sample)) {
+			if(checkForBeat(sampleBuffer[i])) {
 
 				beatRate =  (60 / 0.01f) / lastBeatCounter;
 
@@ -134,7 +179,7 @@ void HR_task(void * p) {
 
 }
 
-#define HR_STACK_SIZE 128
+#define HR_STACK_SIZE 200
 static StackType_t stack[HR_STACK_SIZE];
 static StaticTask_t task;
 
