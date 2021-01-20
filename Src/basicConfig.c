@@ -20,7 +20,6 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **pxIdleTaskTCBBuffer, StackType
 TaskStatus_t stat[6];
 
 void vApplicationIdleHook() {
-	UBaseType_t uxHighWaterMark;
 	int ret = uxTaskGetSystemState(stat, 6, NULL);
 }
 
