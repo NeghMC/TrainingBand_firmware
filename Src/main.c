@@ -9,7 +9,7 @@
 #include <power_men.h>
 #include <HR_sensor.h>
 #include <OLED.h>
-
+#include <USART.h>
 #include <stdlib.h>
 
 // STM32L031K6T6
