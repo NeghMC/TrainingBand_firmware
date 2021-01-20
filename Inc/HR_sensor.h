@@ -8,9 +8,8 @@
 #ifndef HR_SENSOR_H_
 #define HR_SENSOR_H_
 
-extern volatile float beatRate;
-volatile float average;
-
 void HR_createTask(void);
+
+extern volatile float beatAvg;
 
 #endif /* HR_SENSOR_H_ */

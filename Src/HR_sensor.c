@@ -18,21 +18,22 @@
 #define HR_FIFO_WR_PTR_ADD 0x04
 #define HR_FIFO_RD_PTR_ADD 0x06
 
-volatile float beatRate = 0;
-volatile int sample;
-volatile float average;
+volatile float beatAvg;
 
-#define DT 5
+// averaging
+#define HR_AV_ROW 5
+float rates[HR_AV_ROW];
+uint8_t rateSpot = 0;
 
 static uint8_t fifo_rd_ptr, fifo_wr_ptr;
 
 static const uint8_t configuration[] = {
-		0x00, /* FIFO configuration */
+		0xe0, /* FIFO configuration */
 		0x03, /*Mode Configuration*/ // spo
-		0x24, /*SpO2 Configuration*/ //4096, 100, 15
+		0x59, /*SpO2 Configuration*/ //4096, 100, 15
 		0x00, /*RESERVED*/
 		0x00, /*LED1 Pulse Amplitude*/
-		0x1F /* IR Pulsa amplitude */
+		0x3F /* IR Pulsa amplitude */
 };
 
 //#define SAMPLE_NUMBER 96
@@ -112,7 +113,7 @@ void HR_task(void * p) {
 	BT_init();
 
 	for(;;) {
-		vTaskDelayUntil(&now, pdMS_TO_TICKS(200));
+		vTaskDelayUntil(&now, pdMS_TO_TICKS(500));
 		now = xTaskGetTickCount();
 
 		I2C_reserve();
@@ -127,11 +128,16 @@ void HR_task(void * p) {
 			availableSamples = HR_BUFFER_SIZE - (fifo_rd_ptr - fifo_wr_ptr);
 		}
 
+		// checking if the loop isnt too slow
+		//if(availableSamples == 32) {
+		//	__NOP();
+		//}
+
 		if(availableSamples > 0) {
 			// read buffer
 			I2C_ReadReg(HR_DEV_ADDRESS, HR_FIFO_DATA_ADD, pulseData, availableSamples * HR_SAMPLE_SIZE);
 			// write tail pointer
-			I2C_WriteReg(HR_DEV_ADDRESS, HR_FIFO_RD_PTR_ADD, &fifo_wr_ptr, 1);
+			//I2C_WriteReg(HR_DEV_ADDRESS, HR_FIFO_RD_PTR_ADD, &fifo_wr_ptr, 1);
 			fifo_rd_ptr = fifo_wr_ptr;
 		}
 		I2C_release();
@@ -151,29 +157,40 @@ void HR_task(void * p) {
 			sampleBuffer[i] = medianFilter(copy);
 		}*/
 
+		// 0.5 <- part of second we waited, divided by available data we get time between samples
+		float delta = 0.5f / availableSamples;
+
 		// samples analytics
 		for(int i = 0; i < availableSamples; ++i) {
 			lastBeatCounter++;
 
 			// transform to text for uart transmission
-			itoa(sampleBuffer[i], cbuffer + cbufferp, 10);
-			cbufferp += digit_counter(sampleBuffer[i]);
-			cbuffer[cbufferp] = '\n';
-			cbufferp++;
+			//itoa(sampleBuffer[i], cbuffer + cbufferp, 10);
+			//cbufferp += digit_counter(sampleBuffer[i]);
+			//cbuffer[cbufferp] = '\n';
+			//cbufferp++;
 
 			if(checkForBeat(sampleBuffer[i])) {
 
-				beatRate =  (60 / 0.01f) / lastBeatCounter;
+				float beatsPerMinute =  (60 / delta) / lastBeatCounter; // value 0.27 was calculated
 
-				if (beatRate < 255 && beatRate > 20)
-					average = (DT * average + beatRate) / (DT + 1);
+				if (beatsPerMinute < 150 && beatsPerMinute > 30) {
+					rates[rateSpot++] = beatsPerMinute; //Store this reading in the array
+					if(rateSpot >= HR_AV_ROW) rateSpot = 0; //Wrap variable
+
+					//Take average of readings
+					float _beatAvg = 0;
+					for (int x = 0; x < HR_AV_ROW; x++)
+						_beatAvg += rates[x];
+					beatAvg = _beatAvg / HR_AV_ROW;
+				}
 
 				lastBeatCounter = 0;
 			}
 		}
 
-		BT_Transmitt((uint8_t*)cbuffer, cbufferp);
-		cbufferp = 0;
+		//BT_Transmitt((uint8_t*)cbuffer, cbufferp);
+		//cbufferp = 0;
 	}
 
 

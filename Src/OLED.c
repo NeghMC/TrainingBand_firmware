@@ -313,7 +313,7 @@ void OLED_task(void * p) {
 
 	for(;;) {
 		OLED_clear();
-		ftoa(average, str, 1);
+		ftoa(beatAvg, str, 1);
 		oled_puts(1, 1, str, 1, 1);
 		//itoa(sample,str, 10);
 		//oled_puts(1, 30, str, 1, 1);
