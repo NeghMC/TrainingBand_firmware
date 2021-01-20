@@ -9,6 +9,7 @@
 #define HR_SENSOR_H_
 
 extern volatile float beatRate;
+extern volatile uint32_t sample;
 
 void HR_createTask(void);
 

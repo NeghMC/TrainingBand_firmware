@@ -59,21 +59,21 @@
 
 #define bool uint8_t
 
-int16_t IR_AC_Max = 20;
-int16_t IR_AC_Min = -20;
+static int16_t IR_AC_Max = 20;
+static int16_t IR_AC_Min = -20;
 
-int16_t IR_AC_Signal_Current = 0;
-int16_t IR_AC_Signal_Previous;
-int16_t IR_AC_Signal_min = 0;
-int16_t IR_AC_Signal_max = 0;
-int16_t IR_Average_Estimated;
+static int16_t IR_AC_Signal_Current = 0;
+static int16_t IR_AC_Signal_Previous;
+static int16_t IR_AC_Signal_min = 0;
+static int16_t IR_AC_Signal_max = 0;
+static int16_t IR_Average_Estimated;
 
-int16_t positiveEdge = 0;
-int16_t negativeEdge = 0;
-int32_t ir_avg_reg = 0;
+static int16_t positiveEdge = 0;
+static int16_t negativeEdge = 0;
+static int32_t ir_avg_reg = 0;
 
-int16_t cbuf[32];
-uint8_t offset = 0;
+static int16_t cbuf[32];
+static uint8_t offset = 0;
 
 static const uint16_t FIRCoeffs[12] = {172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096};
 

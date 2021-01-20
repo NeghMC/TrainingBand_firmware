@@ -312,9 +312,11 @@ void OLED_task(void * p) {
 	char str[10];
 
 	for(;;) {
-		ftoa(beatRate, str, 1);
 		OLED_clear();
+		ftoa(beatRate, str, 1);
 		oled_puts(1, 1, str, 1, 1);
+		//itoa(sample,str, 10);
+		//oled_puts(1, 30, str, 1, 1);
 		OLED_display();
 		vTaskDelay(1000);
 	}
