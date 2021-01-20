@@ -76,12 +76,13 @@ void BT_disable() {
 	//GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE0)) | (GPIO_MODER_MODE0_1); /* (3) */
 }
 
+static void transmit_callback(BaseType_t * pxHigherPriorityTaskWoken) {
+	xSemaphoreGiveFromISR(semaphoreHandle, pxHigherPriorityTaskWoken);
+}
+
 void BT_Transmitt(uint8_t * buffer, uint16_t length) {
 	xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
 	DMA_reserve(DMA_4);
-	DMA_transfer(DMA_4, 4, (void*)&USART2->TDR, buffer, length, 1);
-	DMA_waitForTransferEnd(DMA_4);
-	DMA_release(DMA_4);
-	xSemaphoreGive(semaphoreHandle);
+	DMA_transferWithCallback(DMA_4, 4, (void*)&USART2->TDR, buffer, length, 1, transmit_callback);
 }
 

@@ -8,6 +8,7 @@
 #ifndef DMA_MEN_H_
 #define DMA_MEN_H_
 
+#include <FreeRTOS.h>
 
 enum dma_number {
 	DMA_1,
@@ -20,6 +21,7 @@ enum dma_number {
 
 void DMA_init(void);
 void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * memAddr, uint16_t size, uint8_t bool_memToPeryph);
+void DMA_transferWithCallback(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * memAddr, uint16_t size, uint8_t bool_memToPeryph, void (*callback)(BaseType_t * pxHigherPriorityTaskWoken));
 void DMA_reserve(enum dma_number nr);
 void DMA_release(enum dma_number nr);
 void DMA_waitForTransferEnd(enum dma_number nr);

@@ -21,6 +21,7 @@ static struct {
 	SemaphoreHandle_t semaphoreHandle;
 	StaticSemaphore_t semaphoreBuffer;
 	TaskHandle_t taskToResume;
+	void (*callback)(BaseType_t * pxHigherPriorityTaskWoken);
 } DMAs[] = {
 	{.offset = 0, .channel = (DMA_Channel_TypeDef *)DMA1_Channel1_BASE},
 	{.offset = 1, .channel = (DMA_Channel_TypeDef *)DMA1_Channel2_BASE},
@@ -85,6 +86,16 @@ void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * 
 
 }
 
+// !! callback will be executed in interrupt !!
+void DMA_transferWithCallback(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * memAddr, uint16_t size, uint8_t bool_memToPeryph, void (*callback)(BaseType_t * pxHigherPriorityTaskWoken)) {
+	if(DMA_inited == 0)
+			trap();
+
+	DMAs[nr].callback = callback;
+	DMA_transfer(nr, peryph, peryphAddr, memAddr, size, bool_memToPeryph);
+}
+
+
 void DMA_waitForTransferEnd(enum dma_number nr) {
 	interruptDetectTrap();
 	DMAs[nr].taskToResume = xTaskGetCurrentTaskHandle();
@@ -98,6 +109,11 @@ static void endTransferAndResumeTask(enum dma_number nr) {
 	if(DMAs[nr].taskToResume != NULL) {
 		vTaskNotifyGiveFromISR(DMAs[nr].taskToResume, &pxHigherPriorityTaskWoken);
 		DMAs[nr].taskToResume = NULL;
+	}
+	if(DMAs[nr].callback != NULL) {
+		DMAs[nr].callback(&pxHigherPriorityTaskWoken);
+		DMAs[nr].callback = NULL;
+		xSemaphoreGiveFromISR(DMAs[nr].semaphoreHandle, &pxHigherPriorityTaskWoken);
 	}
 }
 
