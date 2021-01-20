@@ -13,21 +13,25 @@
 #include <power_men.h>
 
 #define HR_DEV_ADDRESS 0x57
-#define HR_FIFO_DATA_ADDRESS 0x07
+#define HR_FIFO_DATA_ADD 0x07
+#define HR_FIFO_WR_PTR_ADD 0x04
+#define HR_FIFO_RD_PTR_ADD 0x06
 
-float beatRate = 0;
+volatile float beatRate = 0;
+
+static uint8_t fifo_rd_ptr, fifo_wr_ptr;
 
 static const uint8_t configuration[] = {
 		0x02 /*Mode Configuration*/,
-		0x27 /*SpO2 Configuration*/,
+		0x60 /*SpO2 Configuration*/,
 		0x00 /*RESERVED*/,
 		0x0F /*LED1 Pulse Amplitude*/
 };
 
 //#define SAMPLE_NUMBER 96
-#define SAMPLE_SIZE 3
+#define HR_SAMPLE_SIZE 3
 #define HR_BUFFER_SIZE 32
-#define FULL_BUF_SIZE (HR_BUFFER_SIZE * SAMPLE_SIZE)
+#define FULL_BUF_SIZE (HR_BUFFER_SIZE * HR_SAMPLE_SIZE)
 
 #define DT 4
 
@@ -39,7 +43,9 @@ void HR_init(void) {
 	// setting
 	I2C_init();
 	peryph_en();
+	I2C_reserve();
 	I2C_WriteReg(HR_DEV_ADDRESS, 0x09, configuration, sizeof(configuration));
+	I2C_release();
 }
 
 void HR_task(void * p) {
@@ -51,10 +57,25 @@ void HR_task(void * p) {
 	float average = 0;
 
 	for(;;) {
-		vTaskDelayUntil(&now, pdMS_TO_TICKS(250));
+		vTaskDelayUntil(&now, pdMS_TO_TICKS(500));
 		now = xTaskGetTickCount();
-		I2C_ReadReg(HR_DEV_ADDRESS, HR_FIFO_DATA_ADDRESS, pulseData, FULL_BUF_SIZE);
-		for(int i = 0; i < HR_BUFFER_SIZE; ++i) {
+
+		I2C_reserve();
+		I2C_ReadReg(HR_DEV_ADDRESS, HR_FIFO_WR_PTR_ADD, &fifo_wr_ptr, 1);
+		uint8_t dataToRead;
+		if(fifo_wr_ptr > fifo_rd_ptr)
+			dataToRead = fifo_wr_ptr - fifo_rd_ptr;
+		else
+			dataToRead = HR_BUFFER_SIZE - (fifo_rd_ptr - fifo_wr_ptr);
+		if(dataToRead > 0) {
+			dataToRead *= HR_SAMPLE_SIZE;
+			I2C_ReadReg(HR_DEV_ADDRESS, HR_FIFO_DATA_ADD, pulseData, dataToRead);
+			I2C_WriteReg(HR_DEV_ADDRESS, HR_FIFO_RD_PTR_ADD, &fifo_wr_ptr, 1);
+			fifo_rd_ptr = fifo_wr_ptr;
+		}
+		I2C_release();
+
+		for(int i = 0; i < dataToRead; ++i) {
 			int index = i * 3;
 			uint32_t sample = (((uint32_t)pulseData[index]) << 16) | (((uint32_t)pulseData[index+1]) << 8) | ((uint32_t)pulseData[index+2]);
 			if(checkForBeat(sample)) {
@@ -70,7 +91,7 @@ void HR_task(void * p) {
 
 }
 
-#define HR_STACK_SIZE 70
+#define HR_STACK_SIZE 128
 static StackType_t stack[HR_STACK_SIZE];
 static StaticTask_t task;
 

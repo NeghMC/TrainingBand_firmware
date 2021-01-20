@@ -23,6 +23,7 @@ static volatile uint16_t toRead, toWrite;
 
 
 void I2C_init(void) {
+
 	if(inited)
 		return;
 	else
@@ -39,12 +40,15 @@ void I2C_init(void) {
 	I2C1->TIMINGR = (uint32_t)0x00000103;
 	I2C1->CR1 = I2C_CR1_PE | I2C_CR1_TXDMAEN | I2C_CR1_RXDMAEN | I2C_CR1_TCIE;
 	NVIC_EnableIRQ(I2C1_IRQn);
+	//NVIC_SetPriority(I2C1_IRQn, 3);
 
 	semaphoreHandle = xSemaphoreCreateBinaryStatic(&semaphoreBuffer);
 	xSemaphoreGive(semaphoreHandle);
 }
 
 void I2C1_IRQHandler(void) {
+	BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
+
 	if(I2C1->ISR & I2C_ISR_TC) {
 		if(toRead) {
 			I2C1->CR2 = (I2C1->CR2 & ~(0xff << I2C_CR2_NBYTES_Pos)) | I2C_CR2_START |  (toRead << I2C_CR2_NBYTES_Pos) | I2C_CR2_RD_WRN ;
@@ -53,9 +57,8 @@ void I2C1_IRQHandler(void) {
 			// We should switch context so the ISR returns to a different task.
 			// NOTE:  How this is done depends on the port you are using.  Check
 			// the documentation and examples for your port.
-			BaseType_t pxHigherPriorityTaskWoken;
+
 			vTaskNotifyGiveFromISR(taskToResume, &pxHigherPriorityTaskWoken);
-			portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
 
 			I2C1->CR2 |= I2C_CR2_STOP;
 		}
@@ -71,65 +74,31 @@ void I2C1_IRQHandler(void) {
 			}
 		}
 	}
+
+	portEND_SWITCHING_ISR(pxHigherPriorityTaskWoken);
 }
-/*
-void I2C_Transmit(const uint8_t * buffer, uint16_t length, uint8_t address) {
+
+void I2C_reserve() {
 	xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
-	DMA_transfer(DMA_2, 0b110, (void*)&I2C1->TXDR, buffer, length, 1);
-	taskToResume = xTaskGetCurrentTaskHandle();
+}
 
-	if(length > 255) {
-		toWrite = length - 255;
-		I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (255 << I2C_CR2_NBYTES_Pos) | I2C_CR2_RELOAD;
-	} else {
-		I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos);
-	}
-
-	vTaskSuspend(NULL);
-
+void I2C_release() {
 	xSemaphoreGive(semaphoreHandle);
 }
-
-void I2C_Receive(uint8_t * buffer, uint8_t length, uint8_t address, void (*callback)(void)) {
-	receive.buffer = buffer;
-	receive.length = length;
-	completeCallback = callback;
-	I2C1->CR2 = I2C_CR2_START | (address << I2C_CR2_SADD7) | (length << I2C_CR2_NBYTES_Pos) | I2C_CR2_RD_WRN;
-}
-
-void I2C_ReadRegister(uint8_t * buffer, uint8_t length, uint8_t devAddress, uint8_t regAddress) {
-	xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
-
-	taskToResume = xTaskGetCurrentTaskHandle();
-
-	DAM_reserve(DMA_7);
-	DMA_transfer(DMA_7, 6, &I2C1->RXDR, buffer, length, 0);
-
-	toRead = length;
-	address = devAddress;
-
-	I2C1->TXDR = regAddress;
-	I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | (1 << I2C_CR2_NBYTES_Pos);
-	vTaskSuspend(NULL);
-
-	xSemaphoreGive(semaphoreHandle);
-}*/
 
 void I2C_ReadReg(uint8_t devAddress, uint8_t regAddress, uint8_t * data, uint8_t length) {
-	xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
 	taskToResume = xTaskGetCurrentTaskHandle();
 	DMA_reserve(DMA_7);
+	I2C1->TXDR = regAddress;
 	DMA_transfer(DMA_7, 6, (void*)&I2C1->RXDR, data, length, 0); // ! there was problem
 	toRead = length;
-	I2C1->TXDR = regAddress;
+
 	I2C1->CR2 = I2C_CR2_START | (devAddress << I2C_CR2_SADD7) | (1 << I2C_CR2_NBYTES_Pos);
 	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 	DMA_release(DMA_7);
-	xSemaphoreGive(semaphoreHandle);
 }
 
 void I2C_WriteReg(uint8_t devAddress, uint8_t regAddress, const uint8_t * data, uint16_t length) {
-	xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
 	taskToResume = xTaskGetCurrentTaskHandle();
 	I2C1->TXDR = regAddress;
 	DMA_reserve(DMA_2);
@@ -143,6 +112,5 @@ void I2C_WriteReg(uint8_t devAddress, uint8_t regAddress, const uint8_t * data, 
 	}
 	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 	DMA_release(DMA_2);
-	xSemaphoreGive(semaphoreHandle);
 }
 

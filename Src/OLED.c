@@ -107,12 +107,14 @@ static const uint8_t configFrame3[] = {
 };
 */
 void OLED_cmd(uint8_t cmd) {
+	I2C_reserve();
 	I2C_WriteReg(OLED_ADDRESS, OLED_COMMAND, &cmd, 1);
+	I2C_release();
 }
-
+/*
 void OLED_data(uint8_t data) {
 	I2C_WriteReg(OLED_ADDRESS, OLED_DATA, &data, 1);
-}
+}*/
 
 void OLED_init() {
 	I2C_init();
@@ -204,7 +206,9 @@ void OLED_display(void) {
 	OLED_cmd(0x00);
 	OLED_cmd(0x7f);
 
+	I2C_reserve();
 	I2C_WriteReg(OLED_ADDRESS, OLED_DATA, screenBuffer, sizeof(screenBuffer));
+	I2C_release();
 }
 
 static void oled_setPixel(int x, int y, uint8_t color) {
@@ -316,7 +320,7 @@ void OLED_task(void * p) {
 	}
 }
 
-#define DIS_STACK_SIZE 70
+#define DIS_STACK_SIZE 128
 static StackType_t disStack[DIS_STACK_SIZE];
 static StaticTask_t disTask;
 

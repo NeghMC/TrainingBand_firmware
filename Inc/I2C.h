@@ -12,6 +12,8 @@
 
 void I2C_init(void);
 
+void I2C_reserve();
+void I2C_release();
 void I2C_ReadReg(uint8_t devAddress, uint8_t regAddress, uint8_t * data, uint8_t length);
 void I2C_WriteReg(uint8_t devAddress, uint8_t regAddress, uint8_t * data, uint16_t length);
 

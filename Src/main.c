@@ -19,6 +19,9 @@ int main(void) {
 	/* Configure the system clock */
  	clock_setup();
 
+ 	I2C_init();
+ 	DMA_init();
+
 	HR_createTask();
 	OLED_createTask();
 

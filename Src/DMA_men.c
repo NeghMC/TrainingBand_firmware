@@ -77,27 +77,26 @@ void DMA_transfer(enum dma_number nr, uint8_t peryph, void * peryphAddr, void * 
 	if(DMA_inited == 0)
 			trap();
 
-	DMAs[nr].taskToResume = xTaskGetCurrentTaskHandle();
-
 	DMA1_CSELR->CSELR |= (peryph << (DMAs[nr].offset * 4));
 	DMAs[nr].channel->CPAR = (uint32_t)peryphAddr;
 	DMAs[nr].channel->CMAR = (uint32_t)memAddr;
 	DMAs[nr].channel->CNDTR = size;
-	DMAs[nr].channel->CCR |= DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_EN | (bool_memToPeryph ? DMA_CCR_DIR : 0);
+	DMAs[nr].channel->CCR = DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_EN | (bool_memToPeryph ? DMA_CCR_DIR : 0);
 
 }
 
 void DMA_waitForTransferEnd(enum dma_number nr) {
 	interruptDetectTrap();
+	DMAs[nr].taskToResume = xTaskGetCurrentTaskHandle();
 	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 }
+
+BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
 
 static void endTransferAndResumeTask(enum dma_number nr) {
 	DMAs[nr].channel->CCR &= ~DMA_CCR_EN;
 	if(DMAs[nr].taskToResume != NULL) {
-		BaseType_t pxHigherPriorityTaskWoken;
 		vTaskNotifyGiveFromISR(DMAs[nr].taskToResume, &pxHigherPriorityTaskWoken);
-		portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
 		DMAs[nr].taskToResume = NULL;
 	}
 }
@@ -107,6 +106,7 @@ void DMA1_Channel1_IRQHandler(void) {
 		endTransferAndResumeTask(DMA_1);
 		DMA1->IFCR = DMA_IFCR_CTCIF1;
 	}
+	portEND_SWITCHING_ISR(pxHigherPriorityTaskWoken);
 }
 
 void DMA1_Channel2_3_IRQHandler(void) {
@@ -114,6 +114,7 @@ void DMA1_Channel2_3_IRQHandler(void) {
 		endTransferAndResumeTask(DMA_2);
 		DMA1->IFCR = DMA_IFCR_CTCIF2;
 	}
+	portEND_SWITCHING_ISR(pxHigherPriorityTaskWoken);
 }
 
 void DMA1_Channel4_7_IRQHandler(void) {
@@ -133,5 +134,6 @@ void DMA1_Channel4_7_IRQHandler(void) {
 		endTransferAndResumeTask(DMA_7);
 		DMA1->IFCR = DMA_IFCR_CTCIF7;
 	}
+	portEND_SWITCHING_ISR(pxHigherPriorityTaskWoken);
 }
 
