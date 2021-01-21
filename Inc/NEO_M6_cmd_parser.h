@@ -14,12 +14,17 @@
 #define FREQ_LEN   14
 #define BAUD_LEN   28
 
-typedef struct { char payload[NMEA_LEN]; } nmea_conf_package;
-extern const nmea_conf_package nmeaDefaultConfigPackage;
+#define GPGGA   0
+#define GPGLL   1
+#define GPGLV   2
+#define GPGSA   3
+#define GPRMC   4
+#define GPVTG   5
 
-void neo6mGPS_begin(void * send(void*,uint32_t), void* receive(void*,uint32_t));
+typedef struct { char payload[NMEA_LEN]; } nmea_conf_package;
+
 void setupGPS(uint32_t baud, uint16_t hertz);
-void NEO_M6_setSentence(nmea_conf_package * configPacket);
+void NEO_M6_setSentence(nmea_conf_package * configPacket, uint8_t sentence);
 void changeFreq(uint16_t hertz);
 
 #define NMEA_LEN   16

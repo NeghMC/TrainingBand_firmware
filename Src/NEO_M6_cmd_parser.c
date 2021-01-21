@@ -11,13 +11,6 @@
 #define HEADER_LEN      6
 */
 
-#define GPGGA   0
-#define GPGLL   1
-#define GPGLV   2
-#define GPGSA   3
-#define GPRMC   4
-#define GPVTG   5
-
 #define NMEA_ID_POS    7
 #define DDC_POS        8
 #define SERIAL_1_POS   9
@@ -35,7 +28,7 @@
 #define NAV_RATE_1    8
 #define NAV_RATE_2    9
 
-const nmea_conf_package defult = {
+const nmea_conf_package defultConfigPacket = {
 	.payload = {
 		0xB5, // Header char 1
 		0x62, // Header char 2
@@ -420,10 +413,10 @@ void updateValues(char * data)
 	}*/
 }
 
-// Requires char buffer with size of NMEA_LEN
-void NEO_M6_setSentence(nmea_conf_package * configPacket)
+void NEO_M6_setSentence(nmea_conf_package * configPacket, uint8_t sentence)
 {
+	*configPacket = defultConfigPacket;
 	configPacket->payload[SERIAL_1_POS] = 1;
-	configPacket->payload[NMEA_ID_POS] = GPGGA;
+	configPacket->payload[NMEA_ID_POS] = sentence;
 	insertChecksum(configPacket->payload, NMEA_LEN);
 }

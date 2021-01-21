@@ -17,14 +17,14 @@
 // STM32L031K6T6
 // https://www.st.com/en/microcontrollers-microprocessors/stm32l031k6.html#documentation
 
-char str[] = "Hello there!";
-
 void testTaskFun(void * p) {
 
-	BT_init();
+	GPS_init();
+	GPS_enable();
+	vTaskDelay(10);
+	GPS_onlyNMEA_GGA();
 
 	for(;;) {
-		BT_Transmitt(str, 12);
 		vTaskDelay(500);
 	}
 }
@@ -40,10 +40,10 @@ int main(void) {
  	I2C_init();
  	DMA_init();
 
- 	//xTaskCreateStatic(testTaskFun, "TS", TEST_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, testStack, &testTask);
+ 	xTaskCreateStatic(testTaskFun, "TS", TEST_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, testStack, &testTask);
 
-	HR_createTask();
-	OLED_createTask();
+	//HR_createTask();
+	//OLED_createTask();
 
 	vTaskStartScheduler();
 }

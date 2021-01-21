@@ -8,6 +8,8 @@
 #ifndef GPS_H_
 #define GPS_H_
 
+void GPS_init();
 void GPS_enable();
+void GPS_onlyNMEA_GGA();
 
 #endif /* GPS_H_ */

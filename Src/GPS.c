@@ -24,7 +24,7 @@ void GPS_init() {
 
 	// DMA setup
 	RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-	DMA1_CSELR->CSELR |= (0b0101 << DMA_CSELR_C3S_Pos); // channel 6, lpuart_rx
+	DMA1_CSELR->CSELR |= (5 << DMA_CSELR_C3S_Pos); // channel 3, lpuart_rx
 	DMA1_Channel3->CPAR = (uint32_t)&LPUART1->RDR;
 	DMA1_Channel3->CMAR = (uint32_t)buffer;
 	DMA1_Channel3->CNDTR = BUFFER_SIZE;
@@ -33,12 +33,12 @@ void GPS_init() {
 	// Peripheral setup
 	RCC->APB1ENR |= RCC_APB1ENR_LPUART1EN;
 	LPUART1->BRR = 26667;
-	LPUART1->CR3 |= USART_CR3_DMAR;
+	LPUART1->CR3 |= USART_CR3_DMAR | USART_CR3_DMAT;
 	LPUART1->CR2 |= ('\n' << USART_CR2_ADD_Pos);
-	LPUART1->CR1 |= USART_CR1_CMIE | USART_CR1_RXNEIE | USART_CR1_RE | USART_CR1_TE | USART_CR1_UE; //TODO
+	LPUART1->CR1 |= /*USART_CR1_CMIE |*/ USART_CR1_RE | USART_CR1_TE | USART_CR1_UE; //TODO
 
 	// NVIC
-	NVIC_EnableIRQ(LPUART1_IRQn);
+	//NVIC_EnableIRQ(LPUART1_IRQn);
 }
 
 void LPUART1_IRQHandler(void) {
@@ -59,15 +59,6 @@ void LPUART1_IRQHandler(void) {
 	}
 }
 
-void LPUART_prints(char * data) {
-	while(*data) {
-		while(!(LPUART1->ISR & USART_ISR_TC));
-		LPUART1->TDR = *data;
-		data++;
-	}
-}
-
-
 void GPS_enable() {
 	// clock enable for peripheral
 	RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
@@ -81,7 +72,8 @@ void GPS_disable() {
 
 void GPS_onlyNMEA_GGA() {
 	nmea_conf_package conf;
-	NEO_M6_setSentence(&conf);
-	DMA_transfer(DMA_2, 0b101, &LPUART1->TDR, &conf, sizeof(conf), 1);
+	NEO_M6_setSentence(&conf, GPGGA);
+	DMA_reserve(DMA_2);
+	DMA_transferWithCallback(DMA_2, 0b101, (void*)&LPUART1->TDR, &conf, sizeof(conf), 1, NULL);
 }
 
