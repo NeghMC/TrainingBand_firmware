@@ -12,6 +12,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <HR_sensor.h>
+#include <string.h>
 
 #define OLED_ADDRESS 0x3c
 //lub 0x3d
@@ -23,7 +24,7 @@ extern const unsigned char font[];
 extern const unsigned char numbers[];
 
 #define OLED_WIDTH 128
-#define OLED_HEIGHT 64
+#define OLED_HEIGHT 32
 
 #define SWAP(a, b) do{int16_t temp = a; a = b; b = temp;}while(0)
 
@@ -194,30 +195,37 @@ void OLED_init() {
 }
 
 void OLED_clear() {
-	for(int i = 0; i < 512; ++i)
-		screenBuffer[i] = 0;
+	memset(screenBuffer, 0, 512);
 }
 
 void OLED_display(void) {
+/*
 	OLED_cmd(SSD1306_PAGEADDR);
 	OLED_cmd(0x00);
 	OLED_cmd(0xFF);
 	OLED_cmd(SSD1306_COLUMNADDR);
 	OLED_cmd(0x00);
 	OLED_cmd(0x7f);
+	*/
+	OLED_cmd(SSD1306_SETPAGE | 0x0);
+	OLED_cmd(SSD1306_SETLOWCOLUMN | 0x0);
+	OLED_cmd(SSD1306_SETHIGHCOLUMN | 0x0);
 
 	I2C_reserve();
 	I2C_WriteReg(OLED_ADDRESS, OLED_DATA, screenBuffer, sizeof(screenBuffer));
 	I2C_release();
 }
 
-static void oled_setPixel(int x, int y, uint8_t color) {
+static void oled_setPixel_fast(int x, int y, uint8_t color) {
+		if(color)	screenBuffer[x + (y >> 3) * OLED_WIDTH] |= (1 << (y & 0x7));
+		else		screenBuffer[x + (y >> 3) * OLED_WIDTH] &= ~(1 << (y & 0x7));
+}
+
+void oled_setPixel(int x, int y, uint8_t color) {
 	if(x < 0 || x >= OLED_WIDTH || y < 0 || y >= OLED_HEIGHT)
-			return;
+		return;
 
-	if(color)	screenBuffer[x + (y >> 8) * OLED_WIDTH] |= (1 << (y & 0x7));
-	else		screenBuffer[x + (y >> 8) * OLED_WIDTH] &= ~(1 << (y & 0x7));
-
+	oled_setPixel_fast(x, y, color);
 }
 
 // algorytm Bresenhama
@@ -303,22 +311,19 @@ void oled_putn(int x, int y, char * s, uint8_t size, uint8_t color) {
 	}
 }
 
-char * ftoa(double f, char * buf, int precision);
-
+const char * str1 = "Hello!";
+const char * str2 = "World!";
 
 void OLED_task(void * p) {
 	OLED_init();
-
-	char str[10];
+	OLED_clear();
+	oled_puts(1, 20, str1, 1, 1);
+	oled_drawLine(0, 0, 127, 31, 1);
+	oled_puts(1, 30, str2, 1, 1);
+	OLED_display();
 
 	for(;;) {
-		OLED_clear();
-		ftoa(beatAvg, str, 1);
-		oled_puts(1, 1, str, 1, 1);
-		//itoa(sample,str, 10);
-		//oled_puts(1, 30, str, 1, 1);
-		OLED_display();
-		vTaskDelay(1000);
+
 	}
 }
 
@@ -328,109 +333,4 @@ static StaticTask_t disTask;
 
 void OLED_createTask(void) {
 	xTaskCreateStatic(OLED_task,"OT", DIS_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, disStack, &disTask);
-}
-
-#define MAX_PRECISION	(10)
-static const double rounders[MAX_PRECISION + 1] =
-{
-	0.5,				// 0
-	0.05,				// 1
-	0.005,				// 2
-	0.0005,				// 3
-	0.00005,			// 4
-	0.000005,			// 5
-	0.0000005,			// 6
-	0.00000005,			// 7
-	0.000000005,		// 8
-	0.0000000005,		// 9
-	0.00000000005		// 10
-};
-
-char * ftoa(double f, char * buf, int precision)
-{
-	char * ptr = buf;
-	char * p = ptr;
-	char * p1;
-	char c;
-	long intPart;
-
-	// check precision bounds
-	if (precision > MAX_PRECISION)
-		precision = MAX_PRECISION;
-
-	// sign stuff
-	if (f < 0)
-	{
-		f = -f;
-		*ptr++ = '-';
-	}
-
-	if (precision < 0)  // negative precision == automatic precision guess
-	{
-		if (f < 1.0) precision = 6;
-		else if (f < 10.0) precision = 5;
-		else if (f < 100.0) precision = 4;
-		else if (f < 1000.0) precision = 3;
-		else if (f < 10000.0) precision = 2;
-		else if (f < 100000.0) precision = 1;
-		else precision = 0;
-	}
-
-	// round value according the precision
-	if (precision)
-		f += rounders[precision];
-
-	// integer part...
-	intPart = f;
-	f -= intPart;
-
-	if (!intPart)
-		*ptr++ = '0';
-	else
-	{
-		// save start pointer
-		p = ptr;
-
-		// convert (reverse order)
-		while (intPart)
-		{
-			*p++ = '0' + intPart % 10;
-			intPart /= 10;
-		}
-
-		// save end pos
-		p1 = p;
-
-		// reverse result
-		while (p > ptr)
-		{
-			c = *--p;
-			*p = *ptr;
-			*ptr++ = c;
-		}
-
-		// restore end pos
-		ptr = p1;
-	}
-
-	// decimal part
-	if (precision)
-	{
-		// place decimal point
-		*ptr++ = '.';
-
-		// convert
-		while (precision--)
-		{
-			f *= 10.0;
-			c = f;
-			*ptr++ = '0' + c;
-			f -= c;
-		}
-	}
-
-	// terminating zero
-	*ptr = 0;
-
-	return buf;
 }

@@ -10,7 +10,6 @@
 #include "DMA_men.h"
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 #include <GPS.h>
 
 #define GPIO_MODER_MODE2_AF (2 << GPIO_MODER_MODE2_Pos)

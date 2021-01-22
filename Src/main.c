@@ -5,12 +5,12 @@
 
 #include <Bluetooth.h>
 #include <GPS.h>
-#include <FileSystem.h>
+//#include <FileSystem.h>
 #include <power_men.h>
-#include <HR_sensor.h>
+//#include <HR_sensor.h>
 #include <OLED.h>
-#include <Bluetooth.h>
-#include <stdlib.h>
+//#include <Bluetooth.h>
+//#include <stdlib.h>
 #include <DMA_men.h>
 #include <I2C.h>
 
@@ -18,7 +18,7 @@
 // https://www.st.com/en/microcontrollers-microprocessors/stm32l031k6.html#documentation
 
 void testTaskFun(void * p) {
-	//GPS_init();
+	GPS_init();
 	GPS_enable();
 
 	for(;;) {
@@ -38,10 +38,10 @@ int main(void) {
  	I2C_init();
  	DMA_init();
 
- 	xTaskCreateStatic(testTaskFun, "TS", TEST_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, testStack, &testTask);
+ 	//xTaskCreateStatic(testTaskFun, "TS", TEST_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, testStack, &testTask);
 
 	//HR_createTask();
-	//OLED_createTask();
+	OLED_createTask();
 
 	vTaskStartScheduler();
 }
