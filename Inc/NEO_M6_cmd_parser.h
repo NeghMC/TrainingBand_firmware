@@ -21,11 +21,9 @@
 #define GPRMC   4
 #define GPVTG   5
 
-typedef struct { char payload[NMEA_LEN]; } nmea_conf_package;
+void setSentence(char * configPacket, char NMEA_num, uint8_t enable);
 
-void setupGPS(uint32_t baud, uint16_t hertz);
-void NEO_M6_setSentence(nmea_conf_package * configPacket, uint8_t sentence);
-void changeFreq(uint16_t hertz);
+extern const char GPGGA_header[];
 
 #define NMEA_LEN   16
 #define FREQ_LEN   14

@@ -27,7 +27,7 @@
 #define MEAS_RATE_2   7
 #define NAV_RATE_1    8
 #define NAV_RATE_2    9
-
+/*
 const nmea_conf_package defultConfigPacket = {
 	.payload = {
 		0xB5, // Header char 1
@@ -48,6 +48,27 @@ const nmea_conf_package defultConfigPacket = {
 		0x00  // CK_B
 	}
 };
+*/
+const char CFG_MSG[NMEA_LEN] = {
+	0xB5, // Header char 1
+	0x62, // Header char 2
+	0x06, // class
+	0x01, // id
+	0x08, // length LSB
+	0x00, // length MSB
+	0xF0, // payload (NMEA sentence ID char 1)
+	0x00, // payload (NMEA sentence ID char 2)
+	0x00, // payload I/O Target 0 - DDC           - (1 - enable sentence, 0 - disable)
+	0x00, // payload I/O Target 1 - Serial Port 1 - (1 - enable sentence, 0 - disable)
+	0x00, // payload I/O Target 2 - Serial Port 2 - (1 - enable sentence, 0 - disable)
+	0x00, // payload I/O Target 3 - USB           - (1 - enable sentence, 0 - disable)
+	0x00, // payload I/O Target 4 - SPI           - (1 - enable sentence, 0 - disable)
+	0x00, // payload I/O Target 5 - Reserved      - (1 - enable sentence, 0 - disable)
+	0x00, // CK_A
+	0x00  // CK_B
+};
+
+
 /*
 const char CFG_RATE[FREQ_LEN] = {
 	0xB5, // sync char 1
@@ -413,10 +434,21 @@ void updateValues(char * data)
 	}*/
 }
 
+void setSentence(char * configPacket, char NMEA_num, uint8_t enable)
+{
+	memcpy(configPacket, CFG_MSG, NMEA_LEN);
+
+	if (enable)
+		configPacket[SERIAL_1_POS] = 1;
+
+	configPacket[NMEA_ID_POS] = NMEA_num;
+	insertChecksum(configPacket, NMEA_LEN);
+}
+/*
 void NEO_M6_setSentence(nmea_conf_package * configPacket, uint8_t sentence)
 {
 	*configPacket = defultConfigPacket;
 	configPacket->payload[SERIAL_1_POS] = 1;
 	configPacket->payload[NMEA_ID_POS] = sentence;
 	insertChecksum(configPacket->payload, NMEA_LEN);
-}
+}*/

@@ -18,13 +18,11 @@
 // https://www.st.com/en/microcontrollers-microprocessors/stm32l031k6.html#documentation
 
 void testTaskFun(void * p) {
-
-	GPS_init();
+	//GPS_init();
 	GPS_enable();
-	vTaskDelay(10);
-	GPS_onlyNMEA_GGA();
 
 	for(;;) {
+
 		vTaskDelay(500);
 	}
 }
