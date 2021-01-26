@@ -12,6 +12,8 @@
 #include <heartRate.h>
 #include <power_men.h>
 #include <Bluetooth.h>
+#include <utils.h>
+#include <string.h>
 
 #define HR_DEV_ADDRESS 0x57
 #define HR_FIFO_DATA_ADD 0x07
@@ -48,10 +50,14 @@ uint16_t * sampleBuffer = (uint16_t*)pulseData;
 
 static int lastBeatCounter;
 
+/*
 // plotttttt
 #define NUMBER_LENGTH 6
 char cbuffer[NUMBER_LENGTH * HR_BUFFER_SIZE];
 int cbufferp;
+*/
+
+char cbuffer[5];
 
 void HR_init(void) {
 	// setting
@@ -61,49 +67,6 @@ void HR_init(void) {
 	I2C_WriteReg(HR_DEV_ADDRESS, 0x08, configuration, sizeof(configuration));
 	I2C_release();
 }
-
-int digit_counter(uint32_t n) {
-	int count = 0;
-	 while (n != 0) {
-	        n /= 10;     // n = n/10
-	        ++count;
-	    }
-	 return count;
-}
-
-// median filter
-
-/* Function to sort an array using insertion sort*/
-void insertionSort(uint16_t arr[], int n)
-{
-    int i, key, j;
-    for (i = 1; i < n; i++)
-    {
-        key = arr[i];
-        j = i - 1;
-
-        /* Move elements of arr[0..i-1], that are
-        greater than key, to one position ahead
-        of their current position */
-        while (j >= 0 && arr[j] > key)
-        {
-            arr[j + 1] = arr[j];
-            j = j - 1;
-        }
-        arr[j + 1] = key;
-    }
-}
-
-#define MEDIAN_FILTER_ROW 6
-int medianFilter(uint16_t tab[]) {
-	insertionSort(tab, MEDIAN_FILTER_ROW);
-	if(MEDIAN_FILTER_ROW & 0x1) {
-		return tab[MEDIAN_FILTER_ROW / 2 - 1];
-	} else {
-		return (tab[MEDIAN_FILTER_ROW / 2] + tab[MEDIAN_FILTER_ROW / 2 - 1]) / 2;
-	}
-}
-/// end
 
 void HR_task(void * p) {
 
@@ -183,13 +146,22 @@ void HR_task(void * p) {
 					for (int x = 0; x < HR_AV_ROW; x++)
 						_beatAvg += rates[x];
 					beatAvg = _beatAvg / HR_AV_ROW;
+
+						ftoa(beatsPerMinute, cbuffer);
+					int len = strlen(cbuffer);
+					cbuffer[len++] = '\n';
+					cbuffer[len++] = '\r';
+					BT_Transmitt((uint8_t*)cbuffer, len);
+
 				}
+
+
 
 				lastBeatCounter = 0;
 			}
 		}
 
-		//BT_Transmitt((uint8_t*)cbuffer, cbufferp);
+		//
 		//cbufferp = 0;
 	}
 

@@ -342,7 +342,7 @@ static void getField(char * newMsg, char * buf) {
 	END:
 	return;
 }
-
+/*
 // $GPGGA,hhmmss.ss,Latitude,N,Longitude,E,FS,NoSV,HDOP,msl,m,Altref,m,DiffAge,DiffStation*cs<CR><LF>
 void updateValues(char * data)
 {
@@ -431,9 +431,9 @@ void updateValues(char * data)
 	else if (findSentence(GPVTG_header))
 	{
 		// TODO
-	}*/
+	}
 }
-
+*/
 void setSentence(char * configPacket, char NMEA_num, uint8_t enable)
 {
 	memcpy(configPacket, CFG_MSG, NMEA_LEN);

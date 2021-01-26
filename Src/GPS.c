@@ -12,14 +12,16 @@
 #include <stdlib.h>
 #include <math.h>
 #include <GPS.h>
+#include <utils.h>
 
 #define GPIO_MODER_MODE2_AF (2 << GPIO_MODER_MODE2_Pos)
 #define GPIO_MODER_MODE3_AF (2 << GPIO_MODER_MODE3_Pos)
 
 #define BUFFER_SIZE 79+1 // NMEA max length
 char buffer[BUFFER_SIZE];
+volatile char safeBuffer[BUFFER_SIZE];
 
-location_t current;
+volatile location_t current;
 
 
 //const char GPGGA_header[] = { '$', 'G', 'P', 'G', 'G', 'A' };
@@ -72,10 +74,15 @@ void processGPGGA() {
 	for(int i = 0; i < 2; ++i)
 		while(*c++ != ','); // skip to ','
 
+	char * tc = c;
+
 	// read latitude
 	if(*c != ',') {
-		temp = atof(c);
+		tc = c;
 		while(*c++ != ','); // skip to ','
+		*(c-1) = '\0';
+
+		temp = stof(tc);
 		current.latitude = dm_dd(temp, *c++);
 		c++;
 	} else {
@@ -85,8 +92,11 @@ void processGPGGA() {
 
 	// read longitude
 	if(*c != ',') {
-		temp = atof(c);
+		tc = c;
 		while(*c++ != ','); // skip to ','
+		*(c-1) = '\0';
+
+		temp = stof(tc);
 		current.longitude = dm_dd(temp, *c++);
 		//c++;
 	} else {
@@ -102,7 +112,11 @@ void LPUART1_IRQHandler(void) {
 		DMA1->IFCR = DMA_IFCR_CTCIF3;
 
 		if(strncmp(buffer, GPGGA_header, 6) == 0) {
-			processGPGGA();
+			char * buf1 = buffer, *buf2 = safeBuffer;
+			while(*buf1 != '\r')
+				*buf2++ = *buf1++;
+			*buf1 = '\0';
+			//processGPGGA();
 		}
 
 		DMA1_Channel3->CMAR = (uint32_t)buffer;
@@ -127,3 +141,6 @@ location_t GPS_getCurrentLocation() {
 	return current;
 }
 
+char * GPS_getGPGGA() {
+	return safeBuffer;
+}

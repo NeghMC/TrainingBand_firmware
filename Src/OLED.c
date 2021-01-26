@@ -12,6 +12,9 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <HR_sensor.h>
+#include <mini-printf.h>
+#include <GPS.h>
+#include <utils.h>
 
 #define OLED_ADDRESS 0x3c
 //lub 0x3d
@@ -27,7 +30,11 @@ extern const unsigned char numbers[];
 
 #define SWAP(a, b) do{int16_t temp = a; a = b; b = temp;}while(0)
 
-static int cursor;
+static struct {
+	uint8_t x;
+	uint8_t y;
+} cursor;
+
 static const unsigned char * font_p;
 
 static uint8_t screenBuffer[512];
@@ -215,8 +222,8 @@ static void oled_setPixel(int x, int y, uint8_t color) {
 	if(x < 0 || x >= OLED_WIDTH || y < 0 || y >= OLED_HEIGHT)
 			return;
 
-	if(color)	screenBuffer[x + (y >> 8) * OLED_WIDTH] |= (1 << (y & 0x7));
-	else		screenBuffer[x + (y >> 8) * OLED_WIDTH] &= ~(1 << (y & 0x7));
+	if(color)	screenBuffer[x + (y >> 3) * OLED_WIDTH] |= (1 << (y & 0x7));
+	else		screenBuffer[x + (y >> 3) * OLED_WIDTH] &= ~(1 << (y & 0x7));
 
 }
 
@@ -276,161 +283,59 @@ void oled_putc(int x, int y, char c, uint8_t size, uint8_t color) { // @TODO nie
 			j++;
 		}
 	}
-	cursor += (j ? j : 3); // je�li j == 0 to cursor += 3;
+	cursor.x += (j ? j : 3); // je�li j == 0 to curso.xr += 3;
 }
 
 void oled_puts(int x, int y, char * s, uint8_t size, uint8_t color) {
-	cursor = x;
+	cursor.x = x;
+	cursor.y = y;
 	font_p = font;
 
 	while(*s) {
-		oled_putc(cursor, y, *s, size, color);
-		cursor++;
+		oled_putc(cursor.x, cursor.y, *s, size, color);
+		cursor.x++;
 		s++;
+		if(cursor.x >= OLED_WIDTH - (5*size)) {
+					cursor.y += 8*size + 1;
+					cursor.x = x;
+				}
 	}
 }
 
 void oled_putn(int x, int y, char * s, uint8_t size, uint8_t color) {
-	cursor = x;
+	cursor.x = x;
+	cursor.y = y;
 	font_p = numbers;
 
 	while(*s) {
 		char c = (*s) - '0';
 		if(c > '0' && c < '9')
-			oled_putc(cursor, y, *s, size, color);
-		cursor++;
+			oled_putc(cursor.x, cursor.y, *s, size, color);
+		cursor.x++;
 		s++;
 	}
 }
 
-char * ftoa(double f, char * buf, int precision);
-
-
 void OLED_task(void * p) {
 	OLED_init();
+	GPS_init();
+	GPS_enable();
 
-	char str[10];
 
 	for(;;) {
 		OLED_clear();
-		ftoa(beatAvg, str, 1);
-		oled_puts(1, 1, str, 1, 1);
-		//itoa(sample,str, 10);
-		//oled_puts(1, 30, str, 1, 1);
+
+		oled_puts(0, 0, GPS_getGPGGA(), 1, 1);
+
 		OLED_display();
 		vTaskDelay(1000);
 	}
 }
 
-#define DIS_STACK_SIZE 128
+#define DIS_STACK_SIZE 250
 static StackType_t disStack[DIS_STACK_SIZE];
 static StaticTask_t disTask;
 
 void OLED_createTask(void) {
 	xTaskCreateStatic(OLED_task,"OT", DIS_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, disStack, &disTask);
-}
-
-#define MAX_PRECISION	(10)
-static const double rounders[MAX_PRECISION + 1] =
-{
-	0.5,				// 0
-	0.05,				// 1
-	0.005,				// 2
-	0.0005,				// 3
-	0.00005,			// 4
-	0.000005,			// 5
-	0.0000005,			// 6
-	0.00000005,			// 7
-	0.000000005,		// 8
-	0.0000000005,		// 9
-	0.00000000005		// 10
-};
-
-char * ftoa(double f, char * buf, int precision)
-{
-	char * ptr = buf;
-	char * p = ptr;
-	char * p1;
-	char c;
-	long intPart;
-
-	// check precision bounds
-	if (precision > MAX_PRECISION)
-		precision = MAX_PRECISION;
-
-	// sign stuff
-	if (f < 0)
-	{
-		f = -f;
-		*ptr++ = '-';
-	}
-
-	if (precision < 0)  // negative precision == automatic precision guess
-	{
-		if (f < 1.0) precision = 6;
-		else if (f < 10.0) precision = 5;
-		else if (f < 100.0) precision = 4;
-		else if (f < 1000.0) precision = 3;
-		else if (f < 10000.0) precision = 2;
-		else if (f < 100000.0) precision = 1;
-		else precision = 0;
-	}
-
-	// round value according the precision
-	if (precision)
-		f += rounders[precision];
-
-	// integer part...
-	intPart = f;
-	f -= intPart;
-
-	if (!intPart)
-		*ptr++ = '0';
-	else
-	{
-		// save start pointer
-		p = ptr;
-
-		// convert (reverse order)
-		while (intPart)
-		{
-			*p++ = '0' + intPart % 10;
-			intPart /= 10;
-		}
-
-		// save end pos
-		p1 = p;
-
-		// reverse result
-		while (p > ptr)
-		{
-			c = *--p;
-			*p = *ptr;
-			*ptr++ = c;
-		}
-
-		// restore end pos
-		ptr = p1;
-	}
-
-	// decimal part
-	if (precision)
-	{
-		// place decimal point
-		*ptr++ = '.';
-
-		// convert
-		while (precision--)
-		{
-			f *= 10.0;
-			c = f;
-			*ptr++ = '0' + c;
-			f -= c;
-		}
-	}
-
-	// terminating zero
-	*ptr = 0;
-
-	return buf;
 }

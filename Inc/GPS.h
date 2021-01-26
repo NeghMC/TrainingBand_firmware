@@ -14,9 +14,13 @@ typedef struct __attribute__((packed)) {
 	uint8_t isValid;
 } location_t;
 
+extern volatile location_t current;
+extern volatile char buffer2[];
+
 void GPS_init();
 void GPS_enable();
 void GPS_createTask(void);
 location_t GPS_getCurrentLocation();
+char * GPS_getGPGGA();
 
 #endif /* GPS_H_ */
