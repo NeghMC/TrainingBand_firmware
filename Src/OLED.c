@@ -12,7 +12,6 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <HR_sensor.h>
-#include <mini-printf.h>
 #include <GPS.h>
 #include <utils.h>
 
