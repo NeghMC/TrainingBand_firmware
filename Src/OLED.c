@@ -12,8 +12,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <HR_sensor.h>
-#include <GPS.h>
-#include <utils.h>
+#include <fixmath.h>
 
 #define OLED_ADDRESS 0x3c
 //lub 0x3d
@@ -315,17 +314,16 @@ void oled_putn(int x, int y, char * s, uint8_t size, uint8_t color) {
 	}
 }
 
+char beat[10];
+
 void OLED_task(void * p) {
 	OLED_init();
-	GPS_init();
-	GPS_enable();
 
 
 	for(;;) {
 		OLED_clear();
-
-		oled_puts(0, 0, GPS_getGPGGA(), 1, 1);
-
+		fix16_to_str(beatAvg, beat, 2);
+		oled_puts(0, 0, beat, 1, 1);
 		OLED_display();
 		vTaskDelay(1000);
 	}
