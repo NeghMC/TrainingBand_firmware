@@ -54,8 +54,8 @@ void HR_init(void) {
 	I2C_release();
 }
 
-static void add_to_buffer(uint16_t sample) {
-	rates[rateSpot++] = sample; //Store this reading in the array
+static void add_to_buffer(fix16_t beatRate) {
+	rates[rateSpot++] = beatRate; //Store this reading in the array
 	if(rateSpot >= HR_AV_ROW) rateSpot = 0; //Wrap variable
 }
 
@@ -64,7 +64,7 @@ static fix16_t get_average_from_buffer() {
 	fix16_t _beatAvg = F16(0);
 	for (int x = 0; x < HR_AV_ROW; x++)
 		_beatAvg = fix16_add(_beatAvg, rates[x]);
-	return fix16_div(_beatAvg, HR_AV_ROW);
+	return fix16_div(_beatAvg, F16(HR_AV_ROW));
 }
 
 void HR_task(void * p) {
