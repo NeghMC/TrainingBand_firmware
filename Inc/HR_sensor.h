@@ -12,6 +12,11 @@
 
 void HR_createTask(void);
 
-extern volatile fix16_t beatAvg;
+typedef struct {
+	fix16_t average;
+	uint8_t id;
+} pulseData_t;
+
+pulseData_t HR_getCurrentPuls();
 
 #endif /* HR_SENSOR_H_ */

@@ -40,7 +40,7 @@ int main(void) {
 
  	//xTaskCreateStatic(testTaskFun, "TS", TEST_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, testStack, &testTask);
 
-	HR_createTask();
+	//HR_createTask();
 	OLED_createTask();
 
 	vTaskStartScheduler();

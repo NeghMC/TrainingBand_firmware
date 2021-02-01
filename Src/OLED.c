@@ -28,98 +28,20 @@ extern const unsigned char numbers[];
 
 #define SWAP(a, b) do{int16_t temp = a; a = b; b = temp;}while(0)
 
-static struct {
+typedef struct {
 	uint8_t x;
 	uint8_t y;
-} cursor;
+} point_t;
 
-static const unsigned char * font_p;
+static point_t cursor;
 
 static uint8_t screenBuffer[512];
-/*
-static const uint8_t configFrame3[] = {
-		OLED_COMMAND,
-		SSD1306_DISPLAYOFF,
 
-		OLED_COMMAND,
-		SSD1306_SETDISPLAYCLOCKDIV,
-
-		OLED_COMMAND,
-		REFRESH_MID,
-
-		OLED_COMMAND,
-		SSD1306_SETDISPLAYOFFSET,
-
-		OLED_COMMAND,
-		0x0,
-
-		OLED_COMMAND,
-		SSD1306_SETSTARTLINE | 0x0,
-
-		OLED_COMMAND,
-		SSD1306_CHARGEPUMP,
-
-		OLED_COMMAND,
-		0x14,
-
-		OLED_COMMAND,
-		SSD1306_MEMORYMODE, // horizontal memory mode
-
-		OLED_COMMAND,
-		0x00,
-
-		OLED_COMMAND,
-		SSD1306_SEGREMAP | 0x1,
-
-		OLED_COMMAND,
-		SSD1306_COMSCANDEC,
-
-		OLED_COMMAND,
-		SSD1306_SETCONTRAST,
-
-		OLED_COMMAND,
-		0xCF,
-
-		OLED_COMMAND,
-		SSD1306_SETPRECHARGE,
-
-		OLED_COMMAND,
-		SSD1306_SETMULTIPLEX,
-
-		OLED_COMMAND,
-		0x1F,
-
-		OLED_COMMAND,
-		SSD1306_SETCOMPINS,
-
-		OLED_COMMAND,
-		0x02,
-
-		OLED_COMMAND,
-		SSD1306_SETVCOMDETECT,
-
-		OLED_COMMAND,
-		0x40,
-
-		OLED_COMMAND,
-		SSD1306_DISPLAYALLON_RESUME,
-
-		OLED_COMMAND,
-		SSD1306_NORMALDISPLAY,
-
-		OLED_COMMAND,
-		SSD1306_DISPLAYON
-};
-*/
 void OLED_cmd(uint8_t cmd) {
 	I2C_reserve();
 	I2C_WriteReg(OLED_ADDRESS, OLED_COMMAND, &cmd, 1);
 	I2C_release();
 }
-/*
-void OLED_data(uint8_t data) {
-	I2C_WriteReg(OLED_ADDRESS, OLED_DATA, &data, 1);
-}*/
 
 void OLED_init() {
 	I2C_init();
@@ -154,48 +76,6 @@ void OLED_init() {
 	OLED_cmd(SSD1306_NORMALDISPLAY);
 	OLED_cmd(SSD1306_DEACTIVATE_SCROLL);
 	OLED_cmd(SSD1306_DISPLAYON);
-
-	/* mirekk
-	OLED_cmd(SSD1306_DISPLAYOFF);
-				OLED_cmd(SSD1306_SETDISPLAYCLOCKDIV);
-				OLED_cmd(REFRESH_MID);
-
-				OLED_cmd(SSD1306_SETDISPLAYOFFSET);
-				OLED_cmd(0x0);
-				OLED_cmd(SSD1306_SETSTARTLINE | 0x0);
-
-				OLED_cmd(SSD1306_CHARGEPUMP);
-
-				OLED_cmd(0x14); // wewnetrzne zasilanie 9v
-				//OLED_cmd(0x10); // zewnetrzne
-
-				OLED_cmd(SSD1306_MEMORYMODE); // horizontal memory mode
-				OLED_cmd(0x00);
-				OLED_cmd(SSD1306_SEGREMAP | 0x1);
-				OLED_cmd(SSD1306_COMSCANDEC);
-
-				OLED_cmd(SSD1306_SETCONTRAST);
-
-				//OLED_cmd(0xCF); // wewnetrzne zasilanie 9v
-				//OLED_cmd(0x9F); // zewnetrzne
-				OLED_cmd(0x8f);
-
-				OLED_cmd(SSD1306_SETPRECHARGE);
-
-				// x32
-				OLED_cmd(SSD1306_SETMULTIPLEX);
-				OLED_cmd(0x1F);
-				OLED_cmd(SSD1306_SETCOMPINS);
-				OLED_cmd(0x02);
-
-				//OLED_cmd(SSD1306_SETVCOMDETECT); // ?
-				//OLED_cmd(0x40);
-
-				OLED_cmd(SSD1306_DISPLAYALLON_RESUME);
-				OLED_cmd(SSD1306_NORMALDISPLAY);
-
-				OLED_cmd(SSD1306_DISPLAYON);
-*/
 }
 
 void OLED_clear() {
@@ -216,7 +96,11 @@ void OLED_display(void) {
 	I2C_release();
 }
 
-static void oled_setPixel(int x, int y, uint8_t color) {
+static point_t calculate_center_text_start_point(uint8_t y, uint8_t len, uint8_t size) {
+	return (point_t){len * 6 * size, y};
+}
+
+static void setPixel(int x, int y, uint8_t color) {
 	if(x < 0 || x >= OLED_WIDTH || y < 0 || y >= OLED_HEIGHT)
 			return;
 
@@ -225,107 +109,93 @@ static void oled_setPixel(int x, int y, uint8_t color) {
 
 }
 
-// algorytm Bresenhama
-void oled_drawLine(int x1, int y1, int x2, int y2, uint8_t color) {
-
-	register int8_t dx = x2 - x1;
-	register int8_t dy = y2 - y1;
-	register const int8_t x_step = (dx < 0) ? -1 : 1;
-	register const int8_t y_step = (dy < 0) ? -1 : 1;
-
-	dx = abs(dx);
-	dy = abs(dy);
-
-	if(dx < dy) { // sprowadzamy do warunku, os nachylona maksymalnie 45 stopni do OX
-		SWAP(x1, y1);
-		SWAP(x2, y2);
-		SWAP(dx, dy);
-	}
-
-	oled_setPixel(x1, y1, color);
-	int8_t error = dx >> 1;
-	for(uint8_t i = dx; i; i--) {
-		x1 += x_step;
-		error -= dy;
-		if(error < 0) {
-			y1 += y_step;
-			error += dx;
-		}
-		oled_setPixel(x1, y1, color);
-	}
-}
-
-void oled_fillRect(int x, int y, int w, int h, uint8_t color) {
+void OLED_fillRect(int x, int y, int w, int h, uint8_t color) {
 	for(uint8_t i = 0; i <= w; ++i)
 		for(uint8_t j = 0; j <= h; ++j)
-			oled_setPixel(x+i, y+j, color);
+			setPixel(x+i, y+j, color);
 }
 
-void oled_putc(int x, int y, char c, uint8_t size, uint8_t color) { // @TODO nie ma spacji
-	if((x + 6 * size - 1) < 0 || x >= OLED_WIDTH || (y + 8 * size - 1) < 0 || y >= OLED_HEIGHT)
-			return;
-
+uint8_t OLED_putc(point_t p, char c, uint8_t size, uint8_t color) {
 	uint8_t line, j = 0;
 
-	for(int8_t i = 0; i < 5; ++i) { // oryginalny font jest 5 na 8
-		line = font[(c * 5) + i]; // pobieramy pionow� linijk� fonta
+	for(int8_t i = 0; i < 5; ++i) {
+		line = font[(c * 5) + i];
 
-		if(line != 0) { // rysujemy tylko 'znacace' linie
+		if(line != 0) {
 			for(uint8_t k = 0; k < 8; k++) {
-				if(line & 0x1) { // je�li rysujemy pixel fonta
-					if(size == 1)	oled_setPixel(x + j * size, y + k * size, color);
-					else			oled_fillRect(x + j * size, y + k * size, size, size, color);
+				if(line & 0x1) {
+					if(size == 1)	setPixel(p.x + i, p.y + k, color);
+					else			OLED_fillRect(p.x + i * size, p.y + k * size, size, size, color);
 				}
 				line >>= 1;
 			}
-			j++;
+			j = i;
 		}
 	}
-	cursor.x += (j ? j : 3); // je�li j == 0 to curso.xr += 3;
+	return j;
 }
 
-void oled_puts(int x, int y, char * s, uint8_t size, uint8_t color) {
-	cursor.x = x;
-	cursor.y = y;
-	font_p = font;
+void OLED_puts(point_t p, char * s, uint8_t size, uint8_t color) {
+	cursor = p;
 
 	while(*s) {
-		oled_putc(cursor.x, cursor.y, *s, size, color);
-		cursor.x++;
+		uint8_t toMove = OLED_putc(cursor, *s, size, color);
+		cursor.x += toMove + size;
 		s++;
+
+/*		// new line
 		if(cursor.x >= OLED_WIDTH - (5*size)) {
-					cursor.y += 8*size + 1;
-					cursor.x = x;
-				}
+			cursor.y += 8*size + 1;
+			cursor.x = x;
+		}
+*/
 	}
 }
 
-void oled_putn(int x, int y, char * s, uint8_t size, uint8_t color) {
-	cursor.x = x;
-	cursor.y = y;
-	font_p = numbers;
+void OLED_drawBitmap(int x, int y, const uint8_t * bitmap, uint8_t w, uint8_t h, uint8_t color, uint8_t override) {
 
-	while(*s) {
-		char c = (*s) - '0';
-		if(c > '0' && c < '9')
-			oled_putc(cursor.x, cursor.y, *s, size, color);
-		cursor.x++;
-		s++;
+	uint8_t i, j;
+
+	if(override) {
+		for(j = 0; j < h; j++)
+			for(i = 0; i < w; i++)
+				setPixel(x+i, y+j, bitmap[((j+1) * i) / 8] & (1<<(((j+1) * i) % 8))); // TODO
+	} else {
+		for(j = 0; j < h; j++)
+			for(i = 0; i < w; i++)
+				//if(bitmap[j * byteWidth + i / 8] & (128 >> (i & 7)))
+					setPixel(x+i, y+i, color);
 	}
 }
 
 char beat[10];
 
+
+extern const uint8_t emptyBattery[];
+
 void OLED_task(void * p) {
 	OLED_init();
+	OLED_clear();
+	OLED_drawBitmap(3, 3, emptyBattery, 17, 11, 1, 1);
+	//OLED_puts((point_t){20,20}, "hello", 1, 1);
+	OLED_display();
 
+
+
+	for(;;);
+
+	pulseData_t newPuls, oldPuls = {0};
 
 	for(;;) {
-		OLED_clear();
-		fix16_to_str(beatAvg, beat, 2);
-		oled_puts(0, 0, beat, 1, 1);
-		OLED_display();
-		vTaskDelay(1000);
+		newPuls = HR_getCurrentPuls();
+		if(oldPuls.id != newPuls.id) {
+			OLED_clear();
+			fix16_to_str(newPuls.average, beat, 2);
+			OLED_puts(calculate_center_text_start_point(4, strlen(beat), 2), beat, 2, 1);
+			OLED_display();
+			oldPuls = newPuls;
+		}
+		vTaskDelay(500);
 	}
 }
 
